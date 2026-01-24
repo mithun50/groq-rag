@@ -1,10 +1,10 @@
 # groq-rag
 
-[![CI](https://github.com/mithun50/groq-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/mithun50/groq-rag/actions/workflows/ci.yml)
 [![npm version](https://badge.fury.io/js/groq-rag.svg)](https://www.npmjs.com/package/groq-rag)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 
-Extended Groq SDK with RAG (Retrieval-Augmented Generation), web browsing, and agent capabilities.
+Extended Groq SDK with RAG (Retrieval-Augmented Generation), web browsing, and agent capabilities. Build AI agents that can search the web, fetch URLs, query knowledge bases, and more.
 
 ## Features
 
@@ -15,6 +15,19 @@ Extended Groq SDK with RAG (Retrieval-Augmented Generation), web browsing, and a
 - **Agents**: ReAct-style agents with tool use, memory, and streaming
 - **TypeScript**: Full type safety and IntelliSense support
 - **Zero Config**: Works out of the box with sensible defaults
+
+## Supported Models
+
+This package works with all Groq-supported models. Recommended models:
+
+| Model | Description | Best For |
+|-------|-------------|----------|
+| `llama-3.3-70b-versatile` | Latest Llama 3.3 70B | General purpose, best quality |
+| `llama-3.1-8b-instant` | Fast Llama 3.1 8B | Quick responses, lower cost |
+| `qwen/qwen3-32b` | Qwen 3 32B | Alternative, good reasoning |
+| `meta-llama/llama-4-scout-17b-16e-instruct` | Llama 4 Scout | Vision tasks, newest |
+
+See [Groq Models](https://console.groq.com/docs/models) for the full list.
 
 ## Installation
 
