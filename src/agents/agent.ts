@@ -4,26 +4,28 @@ import { ToolExecutor } from '../tools/executor';
 
 /**
  * Parse text-based function calls that some models output
- * Handles formats:
- * - <function=name{"key": "value"}</function>
- * - <function=name {"key": "value"} </function>
- * - <function=name={"key": "value"}</function>
- * - <function=name [{"key": "value"}] (with optional array brackets, optional closing tag)
+ * Handles many format variations the models produce
  */
 function parseTextFunctionCall(text: string): { name: string; args: Record<string, unknown> } | null {
   // Try multiple patterns to handle various model outputs
+  // Models output many variations: {}, ({}), [{}], []{}>, etc.
 
-  // Pattern 1: Standard format with closing tag
-  let match = text.match(/<function=(\w+)[=\s]*(\{[\s\S]*?\})\s*<\/function>/);
+  // Pattern 1: Parentheses wrapped: <function=name({"json"})
+  let match = text.match(/<function=(\w+)\s*\(\s*(\{[\s\S]*?\})\s*\)/);
 
-  // Pattern 2: Array wrapped JSON with optional closing tag
+  // Pattern 2: Standard format with possible stray chars before closing tag
   if (!match) {
-    match = text.match(/<function=(\w+)[=\s]*\[\s*(\{[\s\S]*?\})\s*\](?:\s*<\/function>)?/);
+    match = text.match(/<function=(\w+)(?:\[\])?[=\s]*(\{[\s\S]*?\})[^<]*<\/function>/);
   }
 
-  // Pattern 3: Missing closing tag (extract JSON after function name)
+  // Pattern 3: Array wrapped JSON
   if (!match) {
-    match = text.match(/<function=(\w+)[=\s]*(\{[\s\S]*\})/);
+    match = text.match(/<function=(\w+)[=\s]*\[\s*(\{[\s\S]*?\})\s*\]/);
+  }
+
+  // Pattern 4: Just extract function name and JSON (most permissive fallback)
+  if (!match) {
+    match = text.match(/<function=(\w+)[\s=\[\]\(]*(\{[\s\S]*\})/);
   }
 
   if (match) {
