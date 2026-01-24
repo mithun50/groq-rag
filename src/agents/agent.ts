@@ -4,11 +4,13 @@ import { ToolExecutor } from '../tools/executor';
 
 /**
  * Parse text-based function calls that some models output
- * Format: <function=name{"key": "value"}</function>
+ * Handles formats:
+ * - <function=name{"key": "value"}</function>
+ * - <function=name {"key": "value"} </function>
  */
 function parseTextFunctionCall(text: string): { name: string; args: Record<string, unknown> } | null {
-  // Match: <function=functionName{...json...}</function>
-  const match = text.match(/<function=(\w+)(\{[\s\S]*?\})<\/function>/);
+  // Match: <function=functionName {json} </function> (with optional spaces)
+  const match = text.match(/<function=(\w+)\s*(\{[\s\S]*?\})\s*<\/function>/);
   if (match) {
     try {
       const name = match[1];
