@@ -163,15 +163,16 @@ export function createCalculatorTool(): ToolDefinition {
 export function createDateTimeTool(): ToolDefinition {
   return {
     name: 'get_datetime',
-    description: 'Get the current date and time.',
+    description: 'Get the current date and time in a specific timezone.',
     parameters: {
       type: 'object',
       properties: {
         timezone: {
           type: 'string',
-          description: 'Timezone (e.g., "UTC", "America/New_York"). Defaults to UTC.',
+          description: 'Timezone (e.g., "UTC", "America/New_York", "Asia/Tokyo"). Defaults to UTC.',
         },
       },
+      required: [],
     },
     execute: async (params) => {
       const { timezone = 'UTC' } = params as { timezone?: string };

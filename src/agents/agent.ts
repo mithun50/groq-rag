@@ -3,6 +3,46 @@ import { AgentConfig, AgentResult, AgentStep, ToolDefinition, ToolResult } from 
 import { ToolExecutor } from '../tools/executor';
 
 /**
+ * Parse text-based function calls that some models output
+ * Format: <function=name{"key": "value"}</function>
+ */
+function parseTextFunctionCall(text: string): { name: string; args: Record<string, unknown> } | null {
+  // Match: <function=functionName{...json...}</function>
+  const match = text.match(/<function=(\w+)(\{[\s\S]*?\})<\/function>/);
+  if (match) {
+    try {
+      const name = match[1];
+      const args = JSON.parse(match[2]);
+      return { name, args };
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
+ * Extract failed_generation from Groq API error
+ */
+function extractFailedGeneration(error: unknown): string | null {
+  if (error instanceof Error) {
+    // Try to parse JSON from error message
+    const jsonMatch = error.message.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return parsed.error?.failed_generation || null;
+      } catch {
+        return null;
+      }
+    }
+  }
+  // Check if error has error property directly
+  const err = error as { error?: { failed_generation?: string } };
+  return err.error?.failed_generation || null;
+}
+
+/**
  * ReAct-style agent that can use tools
  */
 export class Agent {
@@ -31,10 +71,18 @@ export class Agent {
   }
 
   private getDefaultSystemPrompt(): string {
-    return `You are a helpful AI assistant with access to tools.
-Use the available tools to help answer questions and complete tasks.
-When you need information you don't have, use the appropriate tool to find it.
-Always provide clear, accurate, and helpful responses.`;
+    return `You are a helpful AI assistant. You have access to tools that you can use to help answer questions.
+
+IMPORTANT: When you need to use a tool, the system will automatically handle the tool calling for you. Just respond naturally and the tools will be invoked through the API's function calling mechanism. Do NOT write out function calls as text like "<function=..." - that format is not supported.
+
+Available capabilities:
+- Search the web for current information
+- Fetch and read content from URLs
+- Query the knowledge base for indexed documents
+- Perform mathematical calculations
+- Get current date and time
+
+When you don't know something or need current information, use the appropriate tool. Provide clear, helpful responses based on the information you gather.`;
   }
 
   /**
@@ -65,13 +113,46 @@ Always provide clear, accurate, and helpful responses.`;
         console.log(`\n[Agent] Iteration ${iteration}`);
       }
 
-      // Call the model
-      const response = await this.client.chat.completions.create({
-        model: this.config.model,
-        messages: this.messages,
-        tools: this.executor.getToolsForAPI(),
-        tool_choice: 'auto',
-      });
+      let response;
+      let textFunctionCall: { name: string; args: Record<string, unknown> } | null = null;
+
+      try {
+        // Call the model
+        response = await this.client.chat.completions.create({
+          model: this.config.model,
+          messages: this.messages,
+          tools: this.executor.getToolsForAPI(),
+          tool_choice: 'auto',
+        });
+      } catch (error: unknown) {
+        // Handle text-based function call errors
+        const failedGen = extractFailedGeneration(error);
+        if (failedGen) {
+          textFunctionCall = parseTextFunctionCall(failedGen);
+          if (textFunctionCall) {
+            // Execute the parsed function call
+            const result = await this.executor.execute(textFunctionCall.name, textFunctionCall.args);
+            toolCalls.push(result);
+            steps.push({
+              action: textFunctionCall.name,
+              actionInput: textFunctionCall.args,
+              observation: result.error || JSON.stringify(result.result),
+            });
+
+            // Add to messages and continue
+            this.messages.push({
+              role: 'assistant',
+              content: `I'll use the ${textFunctionCall.name} tool to help with this.`,
+            });
+            this.messages.push({
+              role: 'user',
+              content: `Tool result: ${result.error || JSON.stringify(result.result)}`,
+            });
+            continue;
+          }
+        }
+        throw error;
+      }
 
       const choice = response.choices[0];
       const message = choice.message;
@@ -167,13 +248,40 @@ Always provide clear, accurate, and helpful responses.`;
     while (iteration < this.config.maxIterations) {
       iteration++;
 
-      const response = await this.client.chat.completions.create({
-        model: this.config.model,
-        messages: this.messages,
-        tools: this.executor.getToolsForAPI(),
-        tool_choice: 'auto',
-        stream: true,
-      });
+      let response;
+      try {
+        response = await this.client.chat.completions.create({
+          model: this.config.model,
+          messages: this.messages,
+          tools: this.executor.getToolsForAPI(),
+          tool_choice: 'auto',
+          stream: true,
+        });
+      } catch (error: unknown) {
+        // Handle text-based function call errors
+        const failedGen = extractFailedGeneration(error);
+        if (failedGen) {
+          const textFunctionCall = parseTextFunctionCall(failedGen);
+          if (textFunctionCall) {
+            yield { type: 'tool_call', data: { name: textFunctionCall.name, arguments: JSON.stringify(textFunctionCall.args) } };
+
+            const result = await this.executor.execute(textFunctionCall.name, textFunctionCall.args);
+            yield { type: 'tool_result', data: result };
+            toolCalls.push(result);
+
+            this.messages.push({
+              role: 'assistant',
+              content: `Using ${textFunctionCall.name} tool.`,
+            });
+            this.messages.push({
+              role: 'user',
+              content: `Tool result: ${result.error || JSON.stringify(result.result)}`,
+            });
+            continue;
+          }
+        }
+        throw error;
+      }
 
       let content = '';
       const currentToolCalls: Groq.Chat.ChatCompletionMessageToolCall[] = [];
