@@ -437,6 +437,37 @@ See the [examples](./examples) directory for complete usage examples:
 - `url-fetch.ts` - URL fetching and summarization
 - `agent.ts` - Agent with tools
 - `streaming-agent.ts` - Streaming agent execution
+- `full-chatbot.ts` - **Full-featured interactive chatbot** with all capabilities
+
+### Full Chatbot Example
+
+The `full-chatbot.ts` example demonstrates all groq-rag features in an interactive CLI:
+
+```bash
+GROQ_API_KEY=your_key npx tsx examples/full-chatbot.ts
+```
+
+Features:
+- **Agent Mode**: Automatically uses web search, URL fetch, calculator, and RAG
+- **RAG Mode**: Uses knowledge base for context-aware responses
+- **Custom Prompts**: Set your own system prompt with `/prompt`
+- **Context Management**: Add context with `/context`
+- **Knowledge Base**: Add URLs (`/add`) or text (`/addtext`)
+- **Web Tools**: Search (`/search`) and fetch (`/fetch`) web content
+
+Commands:
+```
+/help        - Show all commands
+/add <url>   - Add URL to knowledge base
+/addtext     - Add custom text to knowledge
+/search <q>  - Web search
+/fetch <url> - Fetch and summarize URL
+/prompt      - Set custom system prompt
+/context     - Set additional context
+/mode        - Toggle agent/RAG mode
+/clear       - Clear chat history
+/quit        - Exit
+```
 
 ## Development
 
