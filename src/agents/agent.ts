@@ -8,10 +8,24 @@ import { ToolExecutor } from '../tools/executor';
  * - <function=name{"key": "value"}</function>
  * - <function=name {"key": "value"} </function>
  * - <function=name={"key": "value"}</function>
+ * - <function=name [{"key": "value"}] (with optional array brackets, optional closing tag)
  */
 function parseTextFunctionCall(text: string): { name: string; args: Record<string, unknown> } | null {
-  // Match: <function=functionName[= ]{json}[space]</function> (handles =, spaces, or both before JSON)
-  const match = text.match(/<function=(\w+)[=\s]*(\{[\s\S]*?\})\s*<\/function>/);
+  // Try multiple patterns to handle various model outputs
+
+  // Pattern 1: Standard format with closing tag
+  let match = text.match(/<function=(\w+)[=\s]*(\{[\s\S]*?\})\s*<\/function>/);
+
+  // Pattern 2: Array wrapped JSON with optional closing tag
+  if (!match) {
+    match = text.match(/<function=(\w+)[=\s]*\[\s*(\{[\s\S]*?\})\s*\](?:\s*<\/function>)?/);
+  }
+
+  // Pattern 3: Missing closing tag (extract JSON after function name)
+  if (!match) {
+    match = text.match(/<function=(\w+)[=\s]*(\{[\s\S]*\})/);
+  }
+
   if (match) {
     try {
       const name = match[1];
