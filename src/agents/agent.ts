@@ -7,10 +7,11 @@ import { ToolExecutor } from '../tools/executor';
  * Handles formats:
  * - <function=name{"key": "value"}</function>
  * - <function=name {"key": "value"} </function>
+ * - <function=name={"key": "value"}</function>
  */
 function parseTextFunctionCall(text: string): { name: string; args: Record<string, unknown> } | null {
-  // Match: <function=functionName {json} </function> (with optional spaces)
-  const match = text.match(/<function=(\w+)\s*(\{[\s\S]*?\})\s*<\/function>/);
+  // Match: <function=functionName[= ]{json}[space]</function> (handles =, spaces, or both before JSON)
+  const match = text.match(/<function=(\w+)[=\s]*(\{[\s\S]*?\})\s*<\/function>/);
   if (match) {
     try {
       const name = match[1];
@@ -141,14 +142,21 @@ When you don't know something or need current information, use the appropriate t
               observation: result.error || JSON.stringify(result.result),
             });
 
-            // Add to messages and continue
+            // Format result for the model
+            const toolResultStr = result.error
+              ? `Error: ${result.error}`
+              : JSON.stringify(result.result, null, 2);
+
+            // Add assistant message about using the tool
             this.messages.push({
               role: 'assistant',
-              content: `I'll use the ${textFunctionCall.name} tool to help with this.`,
+              content: `I'll use the ${textFunctionCall.name} tool to help answer this.`,
             });
+
+            // Add tool result as system context
             this.messages.push({
               role: 'user',
-              content: `Tool result: ${result.error || JSON.stringify(result.result)}`,
+              content: `Here is the result from ${textFunctionCall.name}:\n\n${toolResultStr}\n\nPlease provide a helpful response based on this information.`,
             });
             continue;
           }
