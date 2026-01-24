@@ -1,7 +1,7 @@
 {
   "name": "groq-rag-demo",
   "version": "1.0.0",
-  "description": "Demo website showcasing groq-rag features",
+  "description": "Interactive demo showcasing groq-rag features - RAG, Web Search, and AI Agents",
   "type": "module",
   "scripts": {
     "start": "node server.js",
@@ -11,5 +11,11 @@
     "dotenv": "^17.2.3",
     "express": "^4.18.2",
     "groq-rag": "file:../.."
-  }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["groq", "rag", "demo", "ai", "llm", "agent"],
+  "author": "mithun50",
+  "license": "MIT"
 }

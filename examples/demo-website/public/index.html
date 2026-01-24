@@ -3,271 +3,306 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>groq-rag Demo</title>
+  <title>groq-rag | All-in-One AI Toolkit Demo</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
 </head>
 <body>
-  <header>
-    <h1>groq-rag Demo</h1>
-    <p>Extended Groq SDK with RAG, Web, and Agent capabilities</p>
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="hero-content">
+      <div class="logo">groq-rag</div>
+      <h1>All-in-One AI Toolkit</h1>
+      <p class="tagline">RAG • Web Search • Agents • Tools — Powered by Groq</p>
+      <div class="hero-stats">
+        <div class="stat"><span class="stat-value">5</span><span class="stat-label">Built-in Tools</span></div>
+        <div class="stat"><span class="stat-value">3</span><span class="stat-label">Search Providers</span></div>
+        <div class="stat"><span class="stat-value">4</span><span class="stat-label">Chunk Strategies</span></div>
+        <div class="stat"><span class="stat-value">∞</span><span class="stat-label">Possibilities</span></div>
+      </div>
+    </div>
   </header>
 
-  <nav>
-    <button class="nav-btn active" data-section="chat">Chat</button>
-    <button class="nav-btn" data-section="rag">RAG</button>
-    <button class="nav-btn" data-section="web">Web</button>
-    <button class="nav-btn" data-section="agent">Agent</button>
-    <button class="nav-btn" data-section="tools">Tools</button>
-  </nav>
+  <!-- Main App -->
+  <main class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h3>Features</h3>
+        <button class="sidebar-btn active" data-feature="chat">
+          <span class="icon">💬</span> Chat
+        </button>
+        <button class="sidebar-btn" data-feature="rag">
+          <span class="icon">📚</span> RAG
+        </button>
+        <button class="sidebar-btn" data-feature="web">
+          <span class="icon">🌐</span> Web
+        </button>
+        <button class="sidebar-btn" data-feature="agent">
+          <span class="icon">🤖</span> Agent
+        </button>
+        <button class="sidebar-btn" data-feature="tools">
+          <span class="icon">🔧</span> Tools
+        </button>
+      </div>
 
-  <main>
-    <!-- Chat Section -->
-    <section id="chat" class="section active">
-      <h2>Basic Chat</h2>
-      <p class="description">Simple chat completion with Groq LLMs</p>
-
-      <div class="card">
-        <h3>Send Message</h3>
-        <div class="form-group">
-          <label for="chat-message">Message</label>
-          <textarea id="chat-message" placeholder="Enter your message...">Hello! What can you tell me about TypeScript?</textarea>
+      <div class="sidebar-section">
+        <h3>Status</h3>
+        <div class="status-item">
+          <span class="status-dot green"></span>
+          <span>API Connected</span>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="chat-model">Model</label>
-            <select id="chat-model">
-              <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
-              <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
-              <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+        <div class="status-item" id="rag-status-indicator">
+          <span class="status-dot yellow"></span>
+          <span>RAG: <span id="doc-count">0</span> docs</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Model</h3>
+        <select id="global-model" class="model-select">
+          <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
+          <option value="llama-3.1-8b-instant">Llama 3.1 8B</option>
+          <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+        </select>
+      </div>
+    </aside>
+
+    <!-- Content Area -->
+    <div class="content">
+      <!-- Chat Feature -->
+      <section id="chat" class="feature active">
+        <div class="feature-header">
+          <h2>💬 Chat Completion</h2>
+          <p>Direct LLM chat with streaming support</p>
+        </div>
+
+        <div class="chat-container">
+          <div class="messages" id="chat-messages">
+            <div class="message assistant">
+              <div class="message-content">Hello! I'm powered by Groq's lightning-fast inference. Ask me anything!</div>
+            </div>
+          </div>
+
+          <div class="chat-input-area">
+            <textarea id="chat-input" placeholder="Type your message..." rows="2"></textarea>
+            <div class="chat-actions">
+              <label class="toggle">
+                <input type="checkbox" id="chat-stream" checked>
+                <span>Stream</span>
+              </label>
+              <button onclick="sendChatMessage()" class="btn primary">Send</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RAG Feature -->
+      <section id="rag" class="feature">
+        <div class="feature-header">
+          <h2>📚 RAG - Retrieval Augmented Generation</h2>
+          <p>Add documents to knowledge base and chat with context</p>
+        </div>
+
+        <div class="rag-grid">
+          <!-- Knowledge Base Panel -->
+          <div class="panel">
+            <h3>Knowledge Base</h3>
+
+            <div class="tabs">
+              <button class="tab active" data-tab="add-text">Add Text</button>
+              <button class="tab" data-tab="add-url">Add URL</button>
+              <button class="tab" data-tab="settings">Settings</button>
+            </div>
+
+            <div class="tab-content active" id="add-text">
+              <textarea id="rag-doc-content" placeholder="Paste document content here..." rows="6"></textarea>
+              <input type="text" id="rag-doc-source" placeholder="Source name (optional)">
+              <button onclick="addRAGDocument()" class="btn">Add Document</button>
+            </div>
+
+            <div class="tab-content" id="add-url">
+              <input type="url" id="rag-url" placeholder="https://example.com/article">
+              <button onclick="addRAGUrl()" class="btn">Fetch & Index</button>
+            </div>
+
+            <div class="tab-content" id="settings">
+              <label>Chunking Strategy</label>
+              <select id="rag-strategy">
+                <option value="recursive">Recursive (default)</option>
+                <option value="fixed">Fixed Size</option>
+                <option value="sentence">Sentence</option>
+                <option value="paragraph">Paragraph</option>
+              </select>
+              <label>Chunk Size</label>
+              <input type="number" id="rag-chunk-size" value="500">
+              <button onclick="initRAGSettings()" class="btn">Apply Settings</button>
+              <button onclick="clearRAG()" class="btn danger">Clear All</button>
+            </div>
+          </div>
+
+          <!-- Query Panel -->
+          <div class="panel">
+            <h3>Query & Chat</h3>
+            <input type="text" id="rag-query" placeholder="Ask a question about your documents...">
+            <div class="btn-group">
+              <button onclick="searchRAG()" class="btn">Search Only</button>
+              <button onclick="chatRAG()" class="btn primary">Chat with Context</button>
+            </div>
+
+            <div class="results" id="rag-results"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Web Feature -->
+      <section id="web" class="feature">
+        <div class="feature-header">
+          <h2>🌐 Web Capabilities</h2>
+          <p>Search the web and fetch URL content</p>
+        </div>
+
+        <div class="web-grid">
+          <!-- Search Panel -->
+          <div class="panel">
+            <h3>Web Search</h3>
+            <input type="text" id="web-query" placeholder="Search the web...">
+            <div class="btn-group">
+              <button onclick="webSearch()" class="btn">Search</button>
+              <button onclick="webSearchChat()" class="btn primary">Search & Chat</button>
+            </div>
+            <div class="results" id="web-search-results"></div>
+          </div>
+
+          <!-- Fetch Panel -->
+          <div class="panel">
+            <h3>URL Fetcher</h3>
+            <input type="url" id="web-url" placeholder="https://example.com">
+            <div class="checkbox-group">
+              <label><input type="checkbox" id="web-links"> Extract Links</label>
+              <label><input type="checkbox" id="web-images"> Extract Images</label>
+            </div>
+            <button onclick="fetchUrl()" class="btn">Fetch & Parse</button>
+            <div class="results" id="web-fetch-results"></div>
+          </div>
+
+          <!-- URL Chat Panel -->
+          <div class="panel full-width">
+            <h3>Chat About URL</h3>
+            <div class="inline-form">
+              <input type="url" id="url-chat-url" placeholder="https://example.com/article">
+              <input type="text" id="url-chat-question" placeholder="What is this page about?">
+              <button onclick="chatAboutUrl()" class="btn primary">Ask</button>
+            </div>
+            <div class="results" id="url-chat-results"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Agent Feature -->
+      <section id="agent" class="feature">
+        <div class="feature-header">
+          <h2>🤖 AI Agent</h2>
+          <p>ReAct-style agent with automatic tool selection</p>
+        </div>
+
+        <div class="agent-container">
+          <div class="tools-overview">
+            <h3>Available Tools</h3>
+            <div class="tool-chips">
+              <span class="chip">🔍 web_search</span>
+              <span class="chip">📄 fetch_url</span>
+              <span class="chip">📚 rag_query</span>
+              <span class="chip">🧮 calculator</span>
+              <span class="chip">🕐 get_datetime</span>
+            </div>
+          </div>
+
+          <div class="agent-input">
+            <textarea id="agent-task" placeholder="Describe a task for the agent...
+Example: Search for the latest AI news and summarize the top 3 stories." rows="3"></textarea>
+            <div class="agent-actions">
+              <label class="toggle">
+                <input type="checkbox" id="agent-stream" checked>
+                <span>Stream</span>
+              </label>
+              <button onclick="runAgent()" class="btn primary large">Run Agent</button>
+            </div>
+          </div>
+
+          <div class="agent-output" id="agent-output">
+            <div class="agent-thinking" id="agent-thinking"></div>
+            <div class="agent-response" id="agent-response"></div>
+            <div class="agent-tools" id="agent-tools"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tools Feature -->
+      <section id="tools" class="feature">
+        <div class="feature-header">
+          <h2>🔧 Built-in Tools</h2>
+          <p>Test individual tools directly</p>
+        </div>
+
+        <div class="tools-grid">
+          <div class="tool-card">
+            <div class="tool-icon">🧮</div>
+            <h3>Calculator</h3>
+            <p>Evaluate mathematical expressions</p>
+            <input type="text" id="calc-expr" placeholder="(2 + 3) * 4 - 1">
+            <button onclick="runCalculator()" class="btn">Calculate</button>
+            <div class="tool-result" id="calc-result"></div>
+          </div>
+
+          <div class="tool-card">
+            <div class="tool-icon">🕐</div>
+            <h3>Date & Time</h3>
+            <p>Get current date and time</p>
+            <select id="dt-tz">
+              <option value="UTC">UTC</option>
+              <option value="America/New_York">New York</option>
+              <option value="Europe/London">London</option>
+              <option value="Asia/Tokyo">Tokyo</option>
+              <option value="Asia/Kolkata">India</option>
             </select>
+            <button onclick="runDateTime()" class="btn">Get Time</button>
+            <div class="tool-result" id="dt-result"></div>
           </div>
-          <div class="form-group">
-            <label>
-              <input type="checkbox" id="chat-stream"> Stream response
-            </label>
+
+          <div class="tool-card">
+            <div class="tool-icon">🔍</div>
+            <h3>Web Search</h3>
+            <p>Search using DuckDuckGo</p>
+            <input type="text" id="tool-search" placeholder="TypeScript tutorials">
+            <button onclick="runWebSearchTool()" class="btn">Search</button>
+            <div class="tool-result" id="search-result"></div>
           </div>
-        </div>
-        <button onclick="sendChat()" class="btn primary">Send</button>
-      </div>
 
-      <div class="card result-card" id="chat-result" style="display:none">
-        <h3>Response</h3>
-        <div class="result-content"></div>
-        <div class="result-meta"></div>
-      </div>
-    </section>
-
-    <!-- RAG Section -->
-    <section id="rag" class="section">
-      <h2>RAG (Retrieval-Augmented Generation)</h2>
-      <p class="description">Add documents to a knowledge base and query them</p>
-
-      <div class="card">
-        <h3>Initialize RAG</h3>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="rag-strategy">Chunking Strategy</label>
-            <select id="rag-strategy">
-              <option value="recursive">Recursive (default)</option>
-              <option value="fixed">Fixed Size</option>
-              <option value="sentence">Sentence</option>
-              <option value="paragraph">Paragraph</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="rag-chunk-size">Chunk Size</label>
-            <input type="number" id="rag-chunk-size" value="500">
+          <div class="tool-card">
+            <div class="tool-icon">📄</div>
+            <h3>URL Fetcher</h3>
+            <p>Fetch and parse web pages</p>
+            <input type="url" id="tool-url" placeholder="https://example.com">
+            <button onclick="runFetchTool()" class="btn">Fetch</button>
+            <div class="tool-result" id="fetch-result"></div>
           </div>
         </div>
-        <button onclick="initRAG()" class="btn">Initialize</button>
-        <button onclick="clearRAG()" class="btn danger">Clear Knowledge Base</button>
-        <span id="rag-status" class="status"></span>
-      </div>
-
-      <div class="card">
-        <h3>Add Document</h3>
-        <div class="form-group">
-          <label for="rag-content">Document Content</label>
-          <textarea id="rag-content" placeholder="Paste document content here...">TypeScript is a strongly typed programming language that builds on JavaScript. It was developed by Microsoft and first released in 2012. TypeScript adds optional static typing and class-based object-oriented programming to the language. The key benefits include: better tooling with IntelliSense, catching errors at compile time, easier refactoring, and improved code documentation through type annotations.</textarea>
-        </div>
-        <div class="form-group">
-          <label for="rag-metadata">Metadata (JSON)</label>
-          <input type="text" id="rag-metadata" placeholder='{"source": "docs.txt"}' value='{"source": "typescript-intro.md"}'>
-        </div>
-        <button onclick="addDocument()" class="btn">Add Document</button>
-      </div>
-
-      <div class="card">
-        <h3>Add URL</h3>
-        <div class="form-group">
-          <label for="rag-url">URL to Index</label>
-          <input type="url" id="rag-url" placeholder="https://example.com/article">
-        </div>
-        <button onclick="addUrl()" class="btn">Add URL</button>
-      </div>
-
-      <div class="card">
-        <h3>Query Knowledge Base</h3>
-        <div class="form-group">
-          <label for="rag-query">Search Query</label>
-          <input type="text" id="rag-query" placeholder="What is TypeScript?" value="What are the benefits of TypeScript?">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="rag-topk">Top K Results</label>
-            <input type="number" id="rag-topk" value="5" min="1" max="20">
-          </div>
-          <div class="form-group">
-            <label for="rag-min-score">Min Score</label>
-            <input type="number" id="rag-min-score" value="0.3" min="0" max="1" step="0.1">
-          </div>
-        </div>
-        <button onclick="queryRAG()" class="btn">Search</button>
-        <button onclick="chatWithRAG()" class="btn primary">Chat with Context</button>
-      </div>
-
-      <div class="card result-card" id="rag-result" style="display:none">
-        <h3>Results</h3>
-        <div class="result-content"></div>
-      </div>
-    </section>
-
-    <!-- Web Section -->
-    <section id="web" class="section">
-      <h2>Web Capabilities</h2>
-      <p class="description">Fetch web pages and search the internet</p>
-
-      <div class="card">
-        <h3>Fetch URL</h3>
-        <div class="form-group">
-          <label for="web-url">URL</label>
-          <input type="url" id="web-url" placeholder="https://example.com" value="https://example.com">
-        </div>
-        <div class="form-group">
-          <label>
-            <input type="checkbox" id="web-include-links"> Include Links
-          </label>
-          <label>
-            <input type="checkbox" id="web-include-images"> Include Images
-          </label>
-        </div>
-        <button onclick="fetchUrl()" class="btn">Fetch</button>
-      </div>
-
-      <div class="card">
-        <h3>Web Search</h3>
-        <div class="form-group">
-          <label for="web-search-query">Search Query</label>
-          <input type="text" id="web-search-query" placeholder="Search the web..." value="TypeScript best practices 2024">
-        </div>
-        <div class="form-group">
-          <label for="web-max-results">Max Results</label>
-          <input type="number" id="web-max-results" value="5" min="1" max="20">
-        </div>
-        <button onclick="webSearch()" class="btn">Search</button>
-        <button onclick="chatWithSearch()" class="btn primary">Chat with Search</button>
-      </div>
-
-      <div class="card">
-        <h3>Chat About URL</h3>
-        <div class="form-group">
-          <label for="url-chat-url">URL</label>
-          <input type="url" id="url-chat-url" placeholder="https://example.com/article">
-        </div>
-        <div class="form-group">
-          <label for="url-chat-message">Question</label>
-          <input type="text" id="url-chat-message" placeholder="Summarize this page" value="What is this page about?">
-        </div>
-        <button onclick="chatAboutUrl()" class="btn primary">Ask</button>
-      </div>
-
-      <div class="card result-card" id="web-result" style="display:none">
-        <h3>Results</h3>
-        <div class="result-content"></div>
-      </div>
-    </section>
-
-    <!-- Agent Section -->
-    <section id="agent" class="section">
-      <h2>AI Agents</h2>
-      <p class="description">ReAct-style agents with tool use</p>
-
-      <div class="card">
-        <h3>Available Tools</h3>
-        <div class="tools-list">
-          <span class="tool-tag">web_search</span>
-          <span class="tool-tag">fetch_url</span>
-          <span class="tool-tag">rag_query</span>
-          <span class="tool-tag">calculator</span>
-          <span class="tool-tag">get_datetime</span>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>Run Agent</h3>
-        <div class="form-group">
-          <label for="agent-task">Task</label>
-          <textarea id="agent-task" placeholder="Describe the task...">Search for the latest news about artificial intelligence and summarize the top 3 stories.</textarea>
-        </div>
-        <div class="form-group">
-          <label>
-            <input type="checkbox" id="agent-stream" checked> Stream output
-          </label>
-        </div>
-        <button onclick="runAgent()" class="btn primary">Run Agent</button>
-      </div>
-
-      <div class="card result-card" id="agent-result" style="display:none">
-        <h3>Agent Output</h3>
-        <div class="agent-steps" id="agent-steps"></div>
-        <div class="result-content"></div>
-        <div class="tool-calls" id="tool-calls"></div>
-      </div>
-    </section>
-
-    <!-- Tools Section -->
-    <section id="tools" class="section">
-      <h2>Built-in Tools</h2>
-      <p class="description">Test individual tools directly</p>
-
-      <div class="card">
-        <h3>Calculator</h3>
-        <p>Evaluate mathematical expressions</p>
-        <div class="form-group">
-          <label for="calc-expression">Expression</label>
-          <input type="text" id="calc-expression" placeholder="2 + 2 * 3" value="(2 + 3) * 4 - 1">
-        </div>
-        <button onclick="calculate()" class="btn">Calculate</button>
-        <div class="inline-result" id="calc-result"></div>
-      </div>
-
-      <div class="card">
-        <h3>Date/Time</h3>
-        <p>Get current date and time</p>
-        <div class="form-group">
-          <label for="dt-timezone">Timezone</label>
-          <select id="dt-timezone">
-            <option value="UTC">UTC</option>
-            <option value="America/New_York">New York</option>
-            <option value="Europe/London">London</option>
-            <option value="Asia/Tokyo">Tokyo</option>
-            <option value="Asia/Kolkata">India</option>
-          </select>
-        </div>
-        <button onclick="getDateTime()" class="btn">Get Time</button>
-        <div class="inline-result" id="dt-result"></div>
-      </div>
-    </section>
+      </section>
+    </div>
   </main>
 
-  <footer>
-    <p>Built with <a href="https://github.com/mithun50/groq-rag" target="_blank">groq-rag</a></p>
-  </footer>
-
-  <div id="loading" class="loading-overlay" style="display:none">
-    <div class="spinner"></div>
-    <p>Processing...</p>
+  <!-- Loading Overlay -->
+  <div id="loading" class="loading-overlay">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p id="loading-text">Processing...</p>
+    </div>
   </div>
+
+  <!-- Toast Notifications -->
+  <div id="toasts" class="toast-container"></div>
 
   <script src="app.js"></script>
 </body>

@@ -1,29 +1,6 @@
-// Navigation
-document.querySelectorAll('.nav-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(btn.dataset.section).classList.add('active');
-  });
-});
-
-// Utility functions
-function showLoading() {
-  document.getElementById('loading').style.display = 'flex';
-}
-
-function hideLoading() {
-  document.getElementById('loading').style.display = 'none';
-}
-
-function showResult(elementId, content, meta = '') {
-  const card = document.getElementById(elementId);
-  card.style.display = 'block';
-  card.querySelector('.result-content').innerHTML = content;
-  const metaEl = card.querySelector('.result-meta');
-  if (metaEl) metaEl.innerHTML = meta;
-}
+// ===== Utilities =====
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
 
 function escapeHtml(text) {
   const div = document.createElement('div');
@@ -31,544 +8,484 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-async function apiCall(endpoint, options = {}) {
-  const response = await fetch(endpoint, {
+function showLoading(text = 'Processing...') {
+  $('#loading-text').textContent = text;
+  $('#loading').classList.add('active');
+}
+
+function hideLoading() {
+  $('#loading').classList.remove('active');
+}
+
+function toast(message, type = 'info') {
+  const container = $('#toasts');
+  const div = document.createElement('div');
+  div.className = `toast ${type}`;
+  div.textContent = message;
+  container.appendChild(div);
+  setTimeout(() => div.remove(), 4000);
+}
+
+function getModel() {
+  return $('#global-model').value;
+}
+
+async function api(endpoint, options = {}) {
+  const res = await fetch(endpoint, {
     headers: { 'Content-Type': 'application/json' },
     ...options,
   });
-  return response.json();
+  return res.json();
 }
 
-// Chat functions
-async function sendChat() {
-  const message = document.getElementById('chat-message').value;
-  const model = document.getElementById('chat-model').value;
-  const stream = document.getElementById('chat-stream').checked;
+// ===== Navigation =====
+$$('.sidebar-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    $$('.sidebar-btn').forEach(b => b.classList.remove('active'));
+    $$('.feature').forEach(f => f.classList.remove('active'));
+    btn.classList.add('active');
+    $(`#${btn.dataset.feature}`).classList.add('active');
+  });
+});
 
-  if (!message.trim()) return alert('Please enter a message');
+// ===== Tabs =====
+$$('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const parent = tab.closest('.panel');
+    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    parent.querySelector(`#${tab.dataset.tab}`).classList.add('active');
+  });
+});
 
-  showLoading();
-  const card = document.getElementById('chat-result');
-  card.style.display = 'block';
-  const contentEl = card.querySelector('.result-content');
-  const metaEl = card.querySelector('.result-meta');
+// ===== Chat =====
+async function sendChatMessage() {
+  const input = $('#chat-input');
+  const message = input.value.trim();
+  if (!message) return;
+
+  const messagesEl = $('#chat-messages');
+  const stream = $('#chat-stream').checked;
+
+  // Add user message
+  messagesEl.innerHTML += `
+    <div class="message user">
+      <div class="message-content">${escapeHtml(message)}</div>
+    </div>
+  `;
+  input.value = '';
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  // Add assistant placeholder
+  const assistantMsg = document.createElement('div');
+  assistantMsg.className = 'message assistant';
+  assistantMsg.innerHTML = '<div class="message-content"></div>';
+  messagesEl.appendChild(assistantMsg);
+  const contentEl = assistantMsg.querySelector('.message-content');
 
   if (stream) {
-    contentEl.innerHTML = '';
-    metaEl.innerHTML = '';
-    hideLoading();
-
     const eventSource = new EventSource(
-      `/api/chat/stream?message=${encodeURIComponent(message)}&model=${model}`
+      `/api/chat/stream?message=${encodeURIComponent(message)}&model=${getModel()}`
     );
-
-    eventSource.onmessage = (event) => {
-      if (event.data === '[DONE]') {
+    eventSource.onmessage = (e) => {
+      if (e.data === '[DONE]') {
         eventSource.close();
         return;
       }
       try {
-        const data = JSON.parse(event.data);
-        if (data.content) {
-          contentEl.innerHTML += escapeHtml(data.content);
-        }
-        if (data.error) {
-          contentEl.innerHTML = `<span style="color: var(--danger)">Error: ${escapeHtml(data.error)}</span>`;
-          eventSource.close();
-        }
-      } catch (e) {}
+        const data = JSON.parse(e.data);
+        if (data.content) contentEl.innerHTML += escapeHtml(data.content);
+        if (data.error) contentEl.innerHTML = `<span style="color:var(--danger)">${escapeHtml(data.error)}</span>`;
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      } catch {}
     };
-
-    eventSource.onerror = () => {
-      eventSource.close();
-    };
+    eventSource.onerror = () => eventSource.close();
   } else {
-    try {
-      const result = await apiCall('/api/chat', {
-        method: 'POST',
-        body: JSON.stringify({ message, model }),
-      });
-
-      hideLoading();
-
-      if (result.success) {
-        contentEl.innerHTML = escapeHtml(result.content);
-        metaEl.innerHTML = `Model: ${result.model} | Tokens: ${result.usage?.total_tokens || 'N/A'}`;
-      } else {
-        contentEl.innerHTML = `<span style="color: var(--danger)">Error: ${escapeHtml(result.error)}</span>`;
-      }
-    } catch (error) {
-      hideLoading();
-      contentEl.innerHTML = `<span style="color: var(--danger)">Error: ${escapeHtml(error.message)}</span>`;
-    }
+    showLoading('Generating response...');
+    const result = await api('/api/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message, model: getModel() }),
+    });
+    hideLoading();
+    contentEl.innerHTML = result.success
+      ? escapeHtml(result.content)
+      : `<span style="color:var(--danger)">${escapeHtml(result.error)}</span>`;
+    messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 }
 
-// RAG functions
-async function initRAG() {
-  const strategy = document.getElementById('rag-strategy').value;
-  const chunkSize = parseInt(document.getElementById('rag-chunk-size').value);
+$('#chat-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChatMessage();
+  }
+});
 
-  showLoading();
+// ===== RAG =====
+async function updateDocCount() {
   try {
-    const result = await apiCall('/api/rag/init', {
-      method: 'POST',
-      body: JSON.stringify({ strategy, chunkSize }),
-    });
-    hideLoading();
-    document.getElementById('rag-status').textContent = result.success ? 'Initialized!' : result.error;
-  } catch (error) {
-    hideLoading();
-    document.getElementById('rag-status').textContent = error.message;
+    const result = await api('/api/rag/count');
+    $('#doc-count').textContent = result.count || 0;
+    const dot = $('#rag-status-indicator .status-dot');
+    dot.className = `status-dot ${result.count > 0 ? 'green' : 'yellow'}`;
+  } catch {}
+}
+
+async function initRAGSettings() {
+  showLoading('Initializing RAG...');
+  const result = await api('/api/rag/init', {
+    method: 'POST',
+    body: JSON.stringify({
+      strategy: $('#rag-strategy').value,
+      chunkSize: parseInt($('#rag-chunk-size').value),
+    }),
+  });
+  hideLoading();
+  toast(result.success ? 'RAG initialized!' : result.error, result.success ? 'success' : 'error');
+  updateDocCount();
+}
+
+async function addRAGDocument() {
+  const content = $('#rag-doc-content').value.trim();
+  if (!content) return toast('Please enter document content', 'error');
+
+  const source = $('#rag-doc-source').value.trim();
+  showLoading('Adding document...');
+  const result = await api('/api/rag/add', {
+    method: 'POST',
+    body: JSON.stringify({ content, metadata: source ? { source } : {} }),
+  });
+  hideLoading();
+  if (result.success) {
+    toast(`Document added! Total chunks: ${result.totalChunks}`, 'success');
+    $('#rag-doc-content').value = '';
+    $('#rag-doc-source').value = '';
+    updateDocCount();
+  } else {
+    toast(result.error, 'error');
   }
 }
 
-async function addDocument() {
-  const content = document.getElementById('rag-content').value;
-  let metadata = {};
+async function addRAGUrl() {
+  const url = $('#rag-url').value.trim();
+  if (!url) return toast('Please enter a URL', 'error');
 
-  try {
-    const metaStr = document.getElementById('rag-metadata').value;
-    if (metaStr) metadata = JSON.parse(metaStr);
-  } catch (e) {
-    return alert('Invalid metadata JSON');
-  }
-
-  if (!content.trim()) return alert('Please enter document content');
-
-  showLoading();
-  try {
-    const result = await apiCall('/api/rag/add', {
-      method: 'POST',
-      body: JSON.stringify({ content, metadata }),
-    });
-    hideLoading();
-
-    if (result.success) {
-      document.getElementById('rag-status').textContent = `Added! Total chunks: ${result.totalChunks}`;
-    } else {
-      alert('Error: ' + result.error);
-    }
-  } catch (error) {
-    hideLoading();
-    alert('Error: ' + error.message);
+  showLoading('Fetching and indexing URL...');
+  const result = await api('/api/rag/add-url', {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+  });
+  hideLoading();
+  if (result.success) {
+    toast(`URL indexed! Total chunks: ${result.totalChunks}`, 'success');
+    $('#rag-url').value = '';
+    updateDocCount();
+  } else {
+    toast(result.error, 'error');
   }
 }
 
-async function addUrl() {
-  const url = document.getElementById('rag-url').value;
-  if (!url) return alert('Please enter a URL');
+async function searchRAG() {
+  const query = $('#rag-query').value.trim();
+  if (!query) return toast('Please enter a query', 'error');
 
-  showLoading();
-  try {
-    const result = await apiCall('/api/rag/add-url', {
-      method: 'POST',
-      body: JSON.stringify({ url }),
-    });
-    hideLoading();
+  showLoading('Searching...');
+  const result = await api('/api/rag/query', {
+    method: 'POST',
+    body: JSON.stringify({ query, topK: 5 }),
+  });
+  hideLoading();
 
-    if (result.success) {
-      document.getElementById('rag-status').textContent = `Added URL! Total chunks: ${result.totalChunks}`;
-    } else {
-      alert('Error: ' + result.error);
-    }
-  } catch (error) {
-    hideLoading();
-    alert('Error: ' + error.message);
+  const resultsEl = $('#rag-results');
+  if (result.success && result.results.length > 0) {
+    resultsEl.innerHTML = result.results.map(r => `
+      <div class="result-item">
+        <div class="meta">Score: ${r.score.toFixed(3)} | ${r.relevance}</div>
+        <div class="content">${escapeHtml(r.content)}</div>
+      </div>
+    `).join('');
+  } else {
+    resultsEl.innerHTML = '<div class="result-item">No results found. Try adding documents first.</div>';
   }
 }
 
-async function queryRAG() {
-  const query = document.getElementById('rag-query').value;
-  const topK = parseInt(document.getElementById('rag-topk').value);
-  const minScore = parseFloat(document.getElementById('rag-min-score').value);
+async function chatRAG() {
+  const query = $('#rag-query').value.trim();
+  if (!query) return toast('Please enter a query', 'error');
 
-  if (!query.trim()) return alert('Please enter a query');
+  showLoading('Generating response with context...');
+  const result = await api('/api/rag/chat', {
+    method: 'POST',
+    body: JSON.stringify({ message: query, model: getModel() }),
+  });
+  hideLoading();
 
-  showLoading();
-  try {
-    const result = await apiCall('/api/rag/query', {
-      method: 'POST',
-      body: JSON.stringify({ query, topK, minScore }),
-    });
-    hideLoading();
-
-    if (result.success) {
-      let html = '';
-      if (result.results.length === 0) {
-        html = '<p>No results found. Try adding documents first or lowering the minimum score.</p>';
-      } else {
-        result.results.forEach((r, i) => {
-          html += `
-            <div class="rag-result-item">
-              <div class="rag-result-score">
-                Score: ${r.score.toFixed(3)} | Relevance: ${r.relevance}
-                ${r.metadata?.source ? ` | Source: ${escapeHtml(r.metadata.source)}` : ''}
-              </div>
-              <div class="rag-result-content">${escapeHtml(r.content)}</div>
-            </div>
-          `;
-        });
-      }
-      showResult('rag-result', html);
-    } else {
-      showResult('rag-result', `<span style="color: var(--danger)">Error: ${escapeHtml(result.error)}</span>`);
+  const resultsEl = $('#rag-results');
+  if (result.success) {
+    let html = `<div class="result-item"><div class="content">${escapeHtml(result.content)}</div></div>`;
+    if (result.sources?.length > 0) {
+      html += '<div style="margin-top:1rem;font-size:0.85rem;color:var(--text-muted)">Sources:</div>';
+      html += result.sources.slice(0, 3).map(s => `
+        <div class="result-item" style="border-left-color:var(--secondary)">
+          <div class="meta">Score: ${s.score.toFixed(3)}</div>
+          <div class="content">${escapeHtml(s.content.slice(0, 200))}...</div>
+        </div>
+      `).join('');
     }
-  } catch (error) {
-    hideLoading();
-    showResult('rag-result', `<span style="color: var(--danger)">Error: ${escapeHtml(error.message)}</span>`);
-  }
-}
-
-async function chatWithRAG() {
-  const message = document.getElementById('rag-query').value;
-  const topK = parseInt(document.getElementById('rag-topk').value);
-
-  if (!message.trim()) return alert('Please enter a query');
-
-  showLoading();
-  try {
-    const result = await apiCall('/api/rag/chat', {
-      method: 'POST',
-      body: JSON.stringify({ message, topK }),
-    });
-    hideLoading();
-
-    if (result.success) {
-      let html = `<div style="margin-bottom: 1rem">${escapeHtml(result.content)}</div>`;
-      if (result.sources?.length > 0) {
-        html += '<hr style="border-color: var(--border); margin: 1rem 0"><strong>Sources:</strong>';
-        result.sources.forEach((s, i) => {
-          html += `
-            <div class="rag-result-item" style="margin-top: 0.5rem">
-              <div class="rag-result-score">Score: ${s.score.toFixed(3)}</div>
-              <div class="rag-result-content">${escapeHtml(s.content.slice(0, 200))}...</div>
-            </div>
-          `;
-        });
-      }
-      showResult('rag-result', html);
-    } else {
-      showResult('rag-result', `<span style="color: var(--danger)">Error: ${escapeHtml(result.error)}</span>`);
-    }
-  } catch (error) {
-    hideLoading();
-    showResult('rag-result', `<span style="color: var(--danger)">Error: ${escapeHtml(error.message)}</span>`);
+    resultsEl.innerHTML = html;
+  } else {
+    resultsEl.innerHTML = `<div class="result-item" style="border-left-color:var(--danger)">${escapeHtml(result.error)}</div>`;
   }
 }
 
 async function clearRAG() {
-  if (!confirm('Are you sure you want to clear the knowledge base?')) return;
-
-  showLoading();
-  try {
-    await apiCall('/api/rag/clear', { method: 'POST' });
-    hideLoading();
-    document.getElementById('rag-status').textContent = 'Knowledge base cleared';
-  } catch (error) {
-    hideLoading();
-    alert('Error: ' + error.message);
-  }
+  if (!confirm('Clear all documents from knowledge base?')) return;
+  showLoading('Clearing...');
+  await api('/api/rag/clear', { method: 'POST' });
+  hideLoading();
+  toast('Knowledge base cleared', 'success');
+  updateDocCount();
+  $('#rag-results').innerHTML = '';
 }
 
-// Web functions
-async function fetchUrl() {
-  const url = document.getElementById('web-url').value;
-  const includeLinks = document.getElementById('web-include-links').checked;
-  const includeImages = document.getElementById('web-include-images').checked;
-
-  if (!url) return alert('Please enter a URL');
-
-  showLoading();
-  try {
-    const result = await apiCall('/api/web/fetch', {
-      method: 'POST',
-      body: JSON.stringify({ url, includeLinks, includeImages }),
-    });
-    hideLoading();
-
-    if (result.success) {
-      let html = `<strong>Title:</strong> ${escapeHtml(result.title || 'N/A')}\n\n`;
-      html += `<strong>Content:</strong>\n${escapeHtml(result.markdown || result.content || 'No content')}\n`;
-
-      if (result.links?.length > 0) {
-        html += `\n<strong>Links (${result.links.length}):</strong>\n`;
-        result.links.slice(0, 10).forEach(link => {
-          html += `- ${escapeHtml(link.text || link.url)}: ${escapeHtml(link.url)}\n`;
-        });
-      }
-
-      if (result.metadata) {
-        html += `\n<strong>Metadata:</strong>\n${JSON.stringify(result.metadata, null, 2)}`;
-      }
-
-      showResult('web-result', html);
-    } else {
-      showResult('web-result', `<span style="color: var(--danger)">Error: ${escapeHtml(result.error)}</span>`);
-    }
-  } catch (error) {
-    hideLoading();
-    showResult('web-result', `<span style="color: var(--danger)">Error: ${escapeHtml(error.message)}</span>`);
-  }
-}
-
+// ===== Web =====
 async function webSearch() {
-  const query = document.getElementById('web-search-query').value;
-  const maxResults = parseInt(document.getElementById('web-max-results').value);
+  const query = $('#web-query').value.trim();
+  if (!query) return toast('Please enter a search query', 'error');
 
-  if (!query.trim()) return alert('Please enter a search query');
+  showLoading('Searching the web...');
+  const result = await api('/api/web/search', {
+    method: 'POST',
+    body: JSON.stringify({ query, maxResults: 5 }),
+  });
+  hideLoading();
 
-  showLoading();
-  try {
-    const result = await apiCall('/api/web/search', {
-      method: 'POST',
-      body: JSON.stringify({ query, maxResults }),
-    });
-    hideLoading();
-
-    if (result.success) {
-      let html = '';
-      if (result.results.length === 0) {
-        html = '<p>No results found.</p>';
-      } else {
-        result.results.forEach(r => {
-          html += `
-            <div class="search-result">
-              <div class="search-result-title">${escapeHtml(r.title)}</div>
-              <div class="search-result-url">${escapeHtml(r.url)}</div>
-              <div class="search-result-snippet">${escapeHtml(r.snippet || '')}</div>
-            </div>
-          `;
-        });
-      }
-      showResult('web-result', html);
-    } else {
-      showResult('web-result', `<span style="color: var(--danger)">Error: ${escapeHtml(result.error)}</span>`);
-    }
-  } catch (error) {
-    hideLoading();
-    showResult('web-result', `<span style="color: var(--danger)">Error: ${escapeHtml(error.message)}</span>`);
+  const resultsEl = $('#web-search-results');
+  if (result.success && result.results.length > 0) {
+    resultsEl.innerHTML = result.results.map(r => `
+      <div class="result-item">
+        <div class="title">${escapeHtml(r.title)}</div>
+        <div class="meta">${escapeHtml(r.url)}</div>
+        <div class="content">${escapeHtml(r.snippet || '')}</div>
+      </div>
+    `).join('');
+  } else {
+    resultsEl.innerHTML = '<div class="result-item">No results found.</div>';
   }
 }
 
-async function chatWithSearch() {
-  const message = document.getElementById('web-search-query').value;
-  const maxResults = parseInt(document.getElementById('web-max-results').value);
+async function webSearchChat() {
+  const query = $('#web-query').value.trim();
+  if (!query) return toast('Please enter a search query', 'error');
 
-  if (!message.trim()) return alert('Please enter a search query');
+  showLoading('Searching and generating response...');
+  const result = await api('/api/web/chat', {
+    method: 'POST',
+    body: JSON.stringify({ message: query, model: getModel() }),
+  });
+  hideLoading();
 
-  showLoading();
-  try {
-    const result = await apiCall('/api/web/chat', {
-      method: 'POST',
-      body: JSON.stringify({ message, maxResults }),
-    });
-    hideLoading();
-
-    if (result.success) {
-      let html = `<div style="margin-bottom: 1rem">${escapeHtml(result.content)}</div>`;
-      if (result.sources?.length > 0) {
-        html += '<hr style="border-color: var(--border); margin: 1rem 0"><strong>Sources:</strong>';
-        result.sources.forEach(s => {
-          html += `
-            <div class="search-result" style="margin-top: 0.5rem">
-              <div class="search-result-title">${escapeHtml(s.title)}</div>
-              <div class="search-result-url">${escapeHtml(s.url)}</div>
-            </div>
-          `;
-        });
-      }
-      showResult('web-result', html);
-    } else {
-      showResult('web-result', `<span style="color: var(--danger)">Error: ${escapeHtml(result.error)}</span>`);
+  const resultsEl = $('#web-search-results');
+  if (result.success) {
+    let html = `<div class="result-item"><div class="content">${escapeHtml(result.content)}</div></div>`;
+    if (result.sources?.length > 0) {
+      html += '<div style="margin-top:1rem;font-size:0.85rem;color:var(--text-muted)">Sources:</div>';
+      html += result.sources.map(s => `
+        <div class="result-item" style="border-left-color:var(--secondary)">
+          <div class="title">${escapeHtml(s.title)}</div>
+          <div class="meta">${escapeHtml(s.url)}</div>
+        </div>
+      `).join('');
     }
-  } catch (error) {
-    hideLoading();
-    showResult('web-result', `<span style="color: var(--danger)">Error: ${escapeHtml(error.message)}</span>`);
+    resultsEl.innerHTML = html;
+  } else {
+    resultsEl.innerHTML = `<div class="result-item" style="border-left-color:var(--danger)">${escapeHtml(result.error)}</div>`;
+  }
+}
+
+async function fetchUrl() {
+  const url = $('#web-url').value.trim();
+  if (!url) return toast('Please enter a URL', 'error');
+
+  showLoading('Fetching URL...');
+  const result = await api('/api/web/fetch', {
+    method: 'POST',
+    body: JSON.stringify({
+      url,
+      includeLinks: $('#web-links').checked,
+      includeImages: $('#web-images').checked,
+    }),
+  });
+  hideLoading();
+
+  const resultsEl = $('#web-fetch-results');
+  if (result.success) {
+    let html = `
+      <div class="result-item">
+        <div class="title">${escapeHtml(result.title || 'No title')}</div>
+        <div class="content">${escapeHtml((result.markdown || result.content || '').slice(0, 1000))}...</div>
+      </div>
+    `;
+    if (result.links?.length > 0) {
+      html += `<div class="result-item" style="border-left-color:var(--secondary)">
+        <div class="title">Links (${result.links.length})</div>
+        <div class="content">${result.links.slice(0, 5).map(l => escapeHtml(l.text || l.href)).join('<br>')}</div>
+      </div>`;
+    }
+    resultsEl.innerHTML = html;
+  } else {
+    resultsEl.innerHTML = `<div class="result-item" style="border-left-color:var(--danger)">${escapeHtml(result.error)}</div>`;
   }
 }
 
 async function chatAboutUrl() {
-  const url = document.getElementById('url-chat-url').value;
-  const message = document.getElementById('url-chat-message').value;
+  const url = $('#url-chat-url').value.trim();
+  const question = $('#url-chat-question').value.trim();
+  if (!url || !question) return toast('Please enter URL and question', 'error');
 
-  if (!url) return alert('Please enter a URL');
-  if (!message.trim()) return alert('Please enter a question');
+  showLoading('Analyzing URL...');
+  const result = await api('/api/url/chat', {
+    method: 'POST',
+    body: JSON.stringify({ url, message: question, model: getModel() }),
+  });
+  hideLoading();
 
-  showLoading();
-  try {
-    const result = await apiCall('/api/url/chat', {
-      method: 'POST',
-      body: JSON.stringify({ url, message }),
-    });
-    hideLoading();
-
-    if (result.success) {
-      showResult('web-result', escapeHtml(result.content));
-    } else {
-      showResult('web-result', `<span style="color: var(--danger)">Error: ${escapeHtml(result.error)}</span>`);
-    }
-  } catch (error) {
-    hideLoading();
-    showResult('web-result', `<span style="color: var(--danger)">Error: ${escapeHtml(error.message)}</span>`);
-  }
+  const resultsEl = $('#url-chat-results');
+  resultsEl.innerHTML = result.success
+    ? `<div class="result-item"><div class="content">${escapeHtml(result.content)}</div></div>`
+    : `<div class="result-item" style="border-left-color:var(--danger)">${escapeHtml(result.error)}</div>`;
 }
 
-// Agent functions
+// ===== Agent =====
 async function runAgent() {
-  const task = document.getElementById('agent-task').value;
-  const stream = document.getElementById('agent-stream').checked;
+  const task = $('#agent-task').value.trim();
+  if (!task) return toast('Please enter a task', 'error');
 
-  if (!task.trim()) return alert('Please enter a task');
+  const stream = $('#agent-stream').checked;
+  const thinkingEl = $('#agent-thinking');
+  const responseEl = $('#agent-response');
+  const toolsEl = $('#agent-tools');
 
-  const card = document.getElementById('agent-result');
-  const stepsEl = document.getElementById('agent-steps');
-  const contentEl = card.querySelector('.result-content');
-  const toolCallsEl = document.getElementById('tool-calls');
-
-  card.style.display = 'block';
-  stepsEl.innerHTML = '';
-  contentEl.innerHTML = '';
-  toolCallsEl.innerHTML = '';
+  thinkingEl.innerHTML = '';
+  responseEl.innerHTML = '';
+  toolsEl.innerHTML = '';
 
   if (stream) {
     const eventSource = new EventSource(
-      `/api/agent/stream?task=${encodeURIComponent(task)}`
+      `/api/agent/stream?task=${encodeURIComponent(task)}&model=${getModel()}`
     );
 
-    eventSource.onmessage = (event) => {
-      if (event.data === '[DONE]') {
+    eventSource.onmessage = (e) => {
+      if (e.data === '[DONE]') {
         eventSource.close();
         return;
       }
-
       try {
-        const data = JSON.parse(event.data);
-
+        const data = JSON.parse(e.data);
         switch (data.type) {
           case 'content':
-            contentEl.innerHTML += escapeHtml(data.data);
+            responseEl.innerHTML += escapeHtml(data.data);
             break;
           case 'tool_call':
-            stepsEl.innerHTML += `
-              <div class="agent-step tool">
-                Calling tool: <strong>${escapeHtml(data.data.name)}</strong>
-                <br><small>${escapeHtml(JSON.stringify(data.data.args))}</small>
+            thinkingEl.innerHTML += `
+              <div class="agent-step">
+                🔧 Calling <strong>${escapeHtml(data.data.name)}</strong>
               </div>
             `;
             break;
           case 'tool_result':
-            // Tool result handled silently
-            break;
-          case 'thinking':
-            stepsEl.innerHTML += `
-              <div class="agent-step thinking">
-                ${escapeHtml(data.data)}
-              </div>
-            `;
+            // Silently handled
             break;
           case 'error':
-            contentEl.innerHTML = `<span style="color: var(--danger)">Error: ${escapeHtml(data.data)}</span>`;
+            responseEl.innerHTML = `<span style="color:var(--danger)">${escapeHtml(data.data)}</span>`;
             eventSource.close();
             break;
         }
-      } catch (e) {}
+      } catch {}
     };
-
-    eventSource.onerror = () => {
-      eventSource.close();
-    };
+    eventSource.onerror = () => eventSource.close();
   } else {
-    showLoading();
-    try {
-      const result = await apiCall('/api/agent/run', {
-        method: 'POST',
-        body: JSON.stringify({ task }),
-      });
-      hideLoading();
-
-      if (result.success) {
-        contentEl.innerHTML = escapeHtml(result.output);
-
-        if (result.toolCalls?.length > 0) {
-          toolCallsEl.innerHTML = '<strong>Tool Calls:</strong>';
-          result.toolCalls.forEach(tc => {
-            toolCallsEl.innerHTML += `
-              <div class="tool-call">
-                <span class="tool-call-name">${escapeHtml(tc.name)}</span>
-                <br>Args: ${escapeHtml(JSON.stringify(tc.args))}
-                <br>Result: ${escapeHtml(typeof tc.result === 'object' ? JSON.stringify(tc.result).slice(0, 200) : String(tc.result).slice(0, 200))}...
-              </div>
-            `;
-          });
-        }
-
-        stepsEl.innerHTML = `<div class="agent-step thinking">Completed in ${result.iterations} iterations</div>`;
-      } else {
-        contentEl.innerHTML = `<span style="color: var(--danger)">Error: ${escapeHtml(result.error)}</span>`;
-      }
-    } catch (error) {
-      hideLoading();
-      contentEl.innerHTML = `<span style="color: var(--danger)">Error: ${escapeHtml(error.message)}</span>`;
-    }
-  }
-}
-
-// Tool functions
-async function calculate() {
-  const expression = document.getElementById('calc-expression').value;
-  if (!expression.trim()) return alert('Please enter an expression');
-
-  try {
-    const result = await apiCall('/api/tools/calculator', {
+    showLoading('Agent is working...');
+    const result = await api('/api/agent/run', {
       method: 'POST',
-      body: JSON.stringify({ expression }),
+      body: JSON.stringify({ task, model: getModel() }),
     });
+    hideLoading();
 
-    const el = document.getElementById('calc-result');
-    if (result.success && result.result !== undefined) {
-      el.innerHTML = `${escapeHtml(expression)} = <strong>${result.result}</strong>`;
-    } else {
-      el.innerHTML = `<span style="color: var(--danger)">${escapeHtml(result.error || 'Invalid expression')}</span>`;
-    }
-  } catch (error) {
-    document.getElementById('calc-result').innerHTML =
-      `<span style="color: var(--danger)">Error: ${escapeHtml(error.message)}</span>`;
-  }
-}
-
-async function getDateTime() {
-  const timezone = document.getElementById('dt-timezone').value;
-
-  try {
-    const result = await apiCall('/api/tools/datetime', {
-      method: 'POST',
-      body: JSON.stringify({ timezone }),
-    });
-
-    const el = document.getElementById('dt-result');
     if (result.success) {
-      el.innerHTML = `
-        <strong>Time:</strong> ${escapeHtml(result.datetime)}<br>
-        <strong>Timezone:</strong> ${escapeHtml(result.timezone)}<br>
-        <strong>ISO:</strong> ${escapeHtml(result.timestamp)}<br>
-        <strong>Unix:</strong> ${result.unix}
-      `;
+      responseEl.innerHTML = escapeHtml(result.output);
+      if (result.toolCalls?.length > 0) {
+        toolsEl.innerHTML = '<div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.5rem">Tools Used:</div>' +
+          result.toolCalls.map(tc => `
+            <div class="agent-step">
+              🔧 <strong>${escapeHtml(tc.name)}</strong>
+            </div>
+          `).join('');
+      }
+      thinkingEl.innerHTML = `<div class="agent-step">✅ Completed in ${result.iterations} iterations</div>`;
     } else {
-      el.innerHTML = `<span style="color: var(--danger)">${escapeHtml(result.error)}</span>`;
+      responseEl.innerHTML = `<span style="color:var(--danger)">${escapeHtml(result.error)}</span>`;
     }
-  } catch (error) {
-    document.getElementById('dt-result').innerHTML =
-      `<span style="color: var(--danger)">Error: ${escapeHtml(error.message)}</span>`;
   }
 }
 
-// Initialize RAG on page load
+// ===== Tools =====
+async function runCalculator() {
+  const expr = $('#calc-expr').value.trim();
+  if (!expr) return;
+  const result = await api('/api/tools/calculator', {
+    method: 'POST',
+    body: JSON.stringify({ expression: expr }),
+  });
+  $('#calc-result').innerHTML = result.result !== undefined
+    ? `<strong>${expr}</strong> = <span style="color:var(--success)">${result.result}</span>`
+    : `<span style="color:var(--danger)">${result.error || 'Invalid'}</span>`;
+}
+
+async function runDateTime() {
+  const tz = $('#dt-tz').value;
+  const result = await api('/api/tools/datetime', {
+    method: 'POST',
+    body: JSON.stringify({ timezone: tz }),
+  });
+  $('#dt-result').innerHTML = result.datetime
+    ? `<strong>${result.datetime}</strong><br><span style="color:var(--text-muted)">${result.timezone}</span>`
+    : `<span style="color:var(--danger)">${result.error}</span>`;
+}
+
+async function runWebSearchTool() {
+  const query = $('#tool-search').value.trim();
+  if (!query) return;
+  showLoading('Searching...');
+  const result = await api('/api/web/search', {
+    method: 'POST',
+    body: JSON.stringify({ query, maxResults: 3 }),
+  });
+  hideLoading();
+  $('#search-result').innerHTML = result.success
+    ? result.results.map(r => `<div style="margin-bottom:0.5rem"><strong>${escapeHtml(r.title)}</strong></div>`).join('')
+    : `<span style="color:var(--danger)">${result.error}</span>`;
+}
+
+async function runFetchTool() {
+  const url = $('#tool-url').value.trim();
+  if (!url) return;
+  showLoading('Fetching...');
+  const result = await api('/api/web/fetch', {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+  });
+  hideLoading();
+  $('#fetch-result').innerHTML = result.success
+    ? `<strong>${escapeHtml(result.title || 'No title')}</strong><br><span style="color:var(--text-muted)">${escapeHtml((result.content || '').slice(0, 200))}...</span>`
+    : `<span style="color:var(--danger)">${result.error}</span>`;
+}
+
+// ===== Init =====
 window.addEventListener('DOMContentLoaded', async () => {
   try {
-    await apiCall('/api/rag/init', { method: 'POST', body: JSON.stringify({}) });
-    console.log('RAG initialized');
-  } catch (e) {
-    console.log('RAG init skipped:', e.message);
-  }
+    await api('/api/rag/init', { method: 'POST', body: JSON.stringify({}) });
+    updateDocCount();
+  } catch {}
 });
