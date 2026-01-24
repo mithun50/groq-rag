@@ -1,491 +1,488 @@
-// ===== Utilities =====
-const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => document.querySelectorAll(sel);
+// Unified Chat App - Uses Agent for automatic tool selection
+// All features (RAG, Web Search, URL Fetch, Calculator, DateTime) in one chat
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
+const API_BASE = '';
+let isProcessing = false;
+let ragInitialized = false;
 
-function showLoading(text = 'Processing...') {
-  $('#loading-text').textContent = text;
-  $('#loading').classList.add('active');
-}
+// DOM Elements
+const messagesContainer = document.getElementById('messages');
+const userInput = document.getElementById('user-input');
+const sendBtn = document.getElementById('send-btn');
+const modelSelect = document.getElementById('model-select');
+const docCountEl = document.getElementById('doc-count');
+const knowledgePanel = document.getElementById('knowledge-panel');
+const panelToggle = document.getElementById('panel-toggle');
+const settingsModal = document.getElementById('settings-modal');
+const settingsBtn = document.getElementById('settings-btn');
+const closeSettings = document.getElementById('close-settings');
 
-function hideLoading() {
-  $('#loading').classList.remove('active');
-}
+// Tool icons mapping
+const toolIcons = {
+  web_search: '🔍',
+  fetch_url: '📄',
+  rag_query: '📚',
+  calculator: '🧮',
+  get_datetime: '🕐',
+};
 
-function toast(message, type = 'info') {
-  const container = $('#toasts');
-  const div = document.createElement('div');
-  div.className = `toast ${type}`;
-  div.textContent = message;
-  container.appendChild(div);
-  setTimeout(() => div.remove(), 4000);
-}
-
-function getModel() {
-  return $('#global-model').value;
-}
-
-async function api(endpoint, options = {}) {
-  const res = await fetch(endpoint, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
-  return res.json();
-}
-
-// ===== Navigation =====
-$$('.sidebar-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    $$('.sidebar-btn').forEach(b => b.classList.remove('active'));
-    $$('.feature').forEach(f => f.classList.remove('active'));
-    btn.classList.add('active');
-    $(`#${btn.dataset.feature}`).classList.add('active');
-  });
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+  initRAG();
+  setupEventListeners();
+  updateDocCount();
+  autoResizeTextarea();
 });
 
-// ===== Tabs =====
-$$('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    const parent = tab.closest('.panel');
-    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    tab.classList.add('active');
-    parent.querySelector(`#${tab.dataset.tab}`).classList.add('active');
+// Setup Event Listeners
+function setupEventListeners() {
+  // Send message
+  sendBtn.addEventListener('click', sendMessage);
+  userInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
   });
-});
 
-// ===== Chat =====
-async function sendChatMessage() {
-  const input = $('#chat-input');
-  const message = input.value.trim();
-  if (!message) return;
+  // Auto-resize textarea
+  userInput.addEventListener('input', autoResizeTextarea);
 
-  const messagesEl = $('#chat-messages');
-  const stream = $('#chat-stream').checked;
+  // Knowledge panel toggle
+  panelToggle.addEventListener('click', () => {
+    knowledgePanel.classList.toggle('collapsed');
+  });
+  // Start collapsed
+  knowledgePanel.classList.add('collapsed');
 
-  // Add user message
-  messagesEl.innerHTML += `
-    <div class="message user">
-      <div class="message-content">${escapeHtml(message)}</div>
-    </div>
-  `;
-  input.value = '';
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-
-  // Add assistant placeholder
-  const assistantMsg = document.createElement('div');
-  assistantMsg.className = 'message assistant';
-  assistantMsg.innerHTML = '<div class="message-content"></div>';
-  messagesEl.appendChild(assistantMsg);
-  const contentEl = assistantMsg.querySelector('.message-content');
-
-  if (stream) {
-    const eventSource = new EventSource(
-      `/api/chat/stream?message=${encodeURIComponent(message)}&model=${getModel()}`
-    );
-    eventSource.onmessage = (e) => {
-      if (e.data === '[DONE]') {
-        eventSource.close();
-        return;
-      }
-      try {
-        const data = JSON.parse(e.data);
-        if (data.content) contentEl.innerHTML += escapeHtml(data.content);
-        if (data.error) contentEl.innerHTML = `<span style="color:var(--danger)">${escapeHtml(data.error)}</span>`;
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-      } catch {}
-    };
-    eventSource.onerror = () => eventSource.close();
-  } else {
-    showLoading('Generating response...');
-    const result = await api('/api/chat', {
-      method: 'POST',
-      body: JSON.stringify({ message, model: getModel() }),
+  // KB tabs
+  document.querySelectorAll('.kb-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.kb-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.kb-tab-content').forEach(c => c.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
     });
-    hideLoading();
-    contentEl.innerHTML = result.success
-      ? escapeHtml(result.content)
-      : `<span style="color:var(--danger)">${escapeHtml(result.error)}</span>`;
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+  });
+
+  // Add document
+  document.getElementById('add-doc-btn').addEventListener('click', addDocument);
+  document.getElementById('add-url-btn').addEventListener('click', addUrl);
+  document.getElementById('clear-kb-btn').addEventListener('click', clearKnowledgeBase);
+
+  // Settings modal
+  settingsBtn.addEventListener('click', () => settingsModal.classList.add('active'));
+  closeSettings.addEventListener('click', () => settingsModal.classList.remove('active'));
+  settingsModal.addEventListener('click', (e) => {
+    if (e.target === settingsModal) settingsModal.classList.remove('active');
+  });
+  document.getElementById('apply-settings').addEventListener('click', applySettings);
+
+  // Hints
+  document.querySelectorAll('.hint').forEach(hint => {
+    hint.addEventListener('click', () => {
+      const text = hint.textContent.replace('Try: ', '').replace(/"/g, '');
+      userInput.value = text;
+      autoResizeTextarea();
+      userInput.focus();
+    });
+  });
+}
+
+function autoResizeTextarea() {
+  userInput.style.height = 'auto';
+  userInput.style.height = Math.min(userInput.scrollHeight, 150) + 'px';
+}
+
+// Initialize RAG
+async function initRAG() {
+  try {
+    const strategy = document.getElementById('chunk-strategy')?.value || 'recursive';
+    const chunkSize = parseInt(document.getElementById('chunk-size')?.value) || 500;
+
+    await fetch(`${API_BASE}/api/rag/init`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ strategy, chunkSize }),
+    });
+    ragInitialized = true;
+  } catch (err) {
+    console.error('Failed to init RAG:', err);
   }
 }
 
-$('#chat-input').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendChatMessage();
-  }
-});
-
-// ===== RAG =====
+// Update document count
 async function updateDocCount() {
   try {
-    const result = await api('/api/rag/count');
-    $('#doc-count').textContent = result.count || 0;
-    const dot = $('#rag-status-indicator .status-dot');
-    dot.className = `status-dot ${result.count > 0 ? 'green' : 'yellow'}`;
-  } catch {}
-}
-
-async function initRAGSettings() {
-  showLoading('Initializing RAG...');
-  const result = await api('/api/rag/init', {
-    method: 'POST',
-    body: JSON.stringify({
-      strategy: $('#rag-strategy').value,
-      chunkSize: parseInt($('#rag-chunk-size').value),
-    }),
-  });
-  hideLoading();
-  toast(result.success ? 'RAG initialized!' : result.error, result.success ? 'success' : 'error');
-  updateDocCount();
-}
-
-async function addRAGDocument() {
-  const content = $('#rag-doc-content').value.trim();
-  if (!content) return toast('Please enter document content', 'error');
-
-  const source = $('#rag-doc-source').value.trim();
-  showLoading('Adding document...');
-  const result = await api('/api/rag/add', {
-    method: 'POST',
-    body: JSON.stringify({ content, metadata: source ? { source } : {} }),
-  });
-  hideLoading();
-  if (result.success) {
-    toast(`Document added! Total chunks: ${result.totalChunks}`, 'success');
-    $('#rag-doc-content').value = '';
-    $('#rag-doc-source').value = '';
-    updateDocCount();
-  } else {
-    toast(result.error, 'error');
-  }
-}
-
-async function addRAGUrl() {
-  const url = $('#rag-url').value.trim();
-  if (!url) return toast('Please enter a URL', 'error');
-
-  showLoading('Fetching and indexing URL...');
-  const result = await api('/api/rag/add-url', {
-    method: 'POST',
-    body: JSON.stringify({ url }),
-  });
-  hideLoading();
-  if (result.success) {
-    toast(`URL indexed! Total chunks: ${result.totalChunks}`, 'success');
-    $('#rag-url').value = '';
-    updateDocCount();
-  } else {
-    toast(result.error, 'error');
-  }
-}
-
-async function searchRAG() {
-  const query = $('#rag-query').value.trim();
-  if (!query) return toast('Please enter a query', 'error');
-
-  showLoading('Searching...');
-  const result = await api('/api/rag/query', {
-    method: 'POST',
-    body: JSON.stringify({ query, topK: 5 }),
-  });
-  hideLoading();
-
-  const resultsEl = $('#rag-results');
-  if (result.success && result.results.length > 0) {
-    resultsEl.innerHTML = result.results.map(r => `
-      <div class="result-item">
-        <div class="meta">Score: ${r.score.toFixed(3)} | ${r.relevance}</div>
-        <div class="content">${escapeHtml(r.content)}</div>
-      </div>
-    `).join('');
-  } else {
-    resultsEl.innerHTML = '<div class="result-item">No results found. Try adding documents first.</div>';
-  }
-}
-
-async function chatRAG() {
-  const query = $('#rag-query').value.trim();
-  if (!query) return toast('Please enter a query', 'error');
-
-  showLoading('Generating response with context...');
-  const result = await api('/api/rag/chat', {
-    method: 'POST',
-    body: JSON.stringify({ message: query, model: getModel() }),
-  });
-  hideLoading();
-
-  const resultsEl = $('#rag-results');
-  if (result.success) {
-    let html = `<div class="result-item"><div class="content">${escapeHtml(result.content)}</div></div>`;
-    if (result.sources?.length > 0) {
-      html += '<div style="margin-top:1rem;font-size:0.85rem;color:var(--text-muted)">Sources:</div>';
-      html += result.sources.slice(0, 3).map(s => `
-        <div class="result-item" style="border-left-color:var(--secondary)">
-          <div class="meta">Score: ${s.score.toFixed(3)}</div>
-          <div class="content">${escapeHtml(s.content.slice(0, 200))}...</div>
-        </div>
-      `).join('');
+    const res = await fetch(`${API_BASE}/api/rag/count`);
+    const data = await res.json();
+    if (data.success) {
+      docCountEl.textContent = `${data.count} docs`;
     }
-    resultsEl.innerHTML = html;
-  } else {
-    resultsEl.innerHTML = `<div class="result-item" style="border-left-color:var(--danger)">${escapeHtml(result.error)}</div>`;
+  } catch (err) {
+    console.error('Failed to get doc count:', err);
   }
 }
 
-async function clearRAG() {
-  if (!confirm('Clear all documents from knowledge base?')) return;
-  showLoading('Clearing...');
-  await api('/api/rag/clear', { method: 'POST' });
-  hideLoading();
-  toast('Knowledge base cleared', 'success');
-  updateDocCount();
-  $('#rag-results').innerHTML = '';
-}
+// Send message using Agent (automatic tool selection)
+async function sendMessage() {
+  const message = userInput.value.trim();
+  if (!message || isProcessing) return;
 
-// ===== Web =====
-async function webSearch() {
-  const query = $('#web-query').value.trim();
-  if (!query) return toast('Please enter a search query', 'error');
+  isProcessing = true;
+  sendBtn.disabled = true;
+  userInput.value = '';
+  autoResizeTextarea();
 
-  showLoading('Searching the web...');
-  const result = await api('/api/web/search', {
-    method: 'POST',
-    body: JSON.stringify({ query, maxResults: 5 }),
-  });
-  hideLoading();
+  // Add user message
+  addMessage('user', message);
 
-  const resultsEl = $('#web-search-results');
-  if (result.success && result.results.length > 0) {
-    resultsEl.innerHTML = result.results.map(r => `
-      <div class="result-item">
-        <div class="title">${escapeHtml(r.title)}</div>
-        <div class="meta">${escapeHtml(r.url)}</div>
-        <div class="content">${escapeHtml(r.snippet || '')}</div>
-      </div>
-    `).join('');
-  } else {
-    resultsEl.innerHTML = '<div class="result-item">No results found.</div>';
-  }
-}
+  // Add thinking indicator
+  const thinkingEl = addThinkingIndicator();
 
-async function webSearchChat() {
-  const query = $('#web-query').value.trim();
-  if (!query) return toast('Please enter a search query', 'error');
+  try {
+    const model = modelSelect.value;
 
-  showLoading('Searching and generating response...');
-  const result = await api('/api/web/chat', {
-    method: 'POST',
-    body: JSON.stringify({ message: query, model: getModel() }),
-  });
-  hideLoading();
-
-  const resultsEl = $('#web-search-results');
-  if (result.success) {
-    let html = `<div class="result-item"><div class="content">${escapeHtml(result.content)}</div></div>`;
-    if (result.sources?.length > 0) {
-      html += '<div style="margin-top:1rem;font-size:0.85rem;color:var(--text-muted)">Sources:</div>';
-      html += result.sources.map(s => `
-        <div class="result-item" style="border-left-color:var(--secondary)">
-          <div class="title">${escapeHtml(s.title)}</div>
-          <div class="meta">${escapeHtml(s.url)}</div>
-        </div>
-      `).join('');
-    }
-    resultsEl.innerHTML = html;
-  } else {
-    resultsEl.innerHTML = `<div class="result-item" style="border-left-color:var(--danger)">${escapeHtml(result.error)}</div>`;
-  }
-}
-
-async function fetchUrl() {
-  const url = $('#web-url').value.trim();
-  if (!url) return toast('Please enter a URL', 'error');
-
-  showLoading('Fetching URL...');
-  const result = await api('/api/web/fetch', {
-    method: 'POST',
-    body: JSON.stringify({
-      url,
-      includeLinks: $('#web-links').checked,
-      includeImages: $('#web-images').checked,
-    }),
-  });
-  hideLoading();
-
-  const resultsEl = $('#web-fetch-results');
-  if (result.success) {
-    let html = `
-      <div class="result-item">
-        <div class="title">${escapeHtml(result.title || 'No title')}</div>
-        <div class="content">${escapeHtml((result.markdown || result.content || '').slice(0, 1000))}...</div>
-      </div>
-    `;
-    if (result.links?.length > 0) {
-      html += `<div class="result-item" style="border-left-color:var(--secondary)">
-        <div class="title">Links (${result.links.length})</div>
-        <div class="content">${result.links.slice(0, 5).map(l => escapeHtml(l.text || l.href)).join('<br>')}</div>
-      </div>`;
-    }
-    resultsEl.innerHTML = html;
-  } else {
-    resultsEl.innerHTML = `<div class="result-item" style="border-left-color:var(--danger)">${escapeHtml(result.error)}</div>`;
-  }
-}
-
-async function chatAboutUrl() {
-  const url = $('#url-chat-url').value.trim();
-  const question = $('#url-chat-question').value.trim();
-  if (!url || !question) return toast('Please enter URL and question', 'error');
-
-  showLoading('Analyzing URL...');
-  const result = await api('/api/url/chat', {
-    method: 'POST',
-    body: JSON.stringify({ url, message: question, model: getModel() }),
-  });
-  hideLoading();
-
-  const resultsEl = $('#url-chat-results');
-  resultsEl.innerHTML = result.success
-    ? `<div class="result-item"><div class="content">${escapeHtml(result.content)}</div></div>`
-    : `<div class="result-item" style="border-left-color:var(--danger)">${escapeHtml(result.error)}</div>`;
-}
-
-// ===== Agent =====
-async function runAgent() {
-  const task = $('#agent-task').value.trim();
-  if (!task) return toast('Please enter a task', 'error');
-
-  const stream = $('#agent-stream').checked;
-  const thinkingEl = $('#agent-thinking');
-  const responseEl = $('#agent-response');
-  const toolsEl = $('#agent-tools');
-
-  thinkingEl.innerHTML = '';
-  responseEl.innerHTML = '';
-  toolsEl.innerHTML = '';
-
-  if (stream) {
+    // Use streaming agent endpoint
     const eventSource = new EventSource(
-      `/api/agent/stream?task=${encodeURIComponent(task)}&model=${getModel()}`
+      `${API_BASE}/api/agent/stream?task=${encodeURIComponent(message)}&model=${encodeURIComponent(model)}`
     );
 
-    eventSource.onmessage = (e) => {
-      if (e.data === '[DONE]') {
+    let response = '';
+    let toolCalls = [];
+    let currentThinkingText = 'Thinking...';
+
+    eventSource.onmessage = (event) => {
+      if (event.data === '[DONE]') {
         eventSource.close();
+        removeThinkingIndicator(thinkingEl);
+        addMessage('assistant', response, toolCalls);
+        isProcessing = false;
+        sendBtn.disabled = false;
         return;
       }
-      try {
-        const data = JSON.parse(e.data);
-        switch (data.type) {
-          case 'content':
-            responseEl.innerHTML += escapeHtml(data.data);
-            break;
-          case 'tool_call':
-            thinkingEl.innerHTML += `
-              <div class="agent-step">
-                🔧 Calling <strong>${escapeHtml(data.data.name)}</strong>
-              </div>
-            `;
-            break;
-          case 'tool_result':
-            // Silently handled
-            break;
-          case 'error':
-            responseEl.innerHTML = `<span style="color:var(--danger)">${escapeHtml(data.data)}</span>`;
-            eventSource.close();
-            break;
-        }
-      } catch {}
-    };
-    eventSource.onerror = () => eventSource.close();
-  } else {
-    showLoading('Agent is working...');
-    const result = await api('/api/agent/run', {
-      method: 'POST',
-      body: JSON.stringify({ task, model: getModel() }),
-    });
-    hideLoading();
 
-    if (result.success) {
-      responseEl.innerHTML = escapeHtml(result.output);
-      if (result.toolCalls?.length > 0) {
-        toolsEl.innerHTML = '<div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.5rem">Tools Used:</div>' +
-          result.toolCalls.map(tc => `
-            <div class="agent-step">
-              🔧 <strong>${escapeHtml(tc.name)}</strong>
-            </div>
-          `).join('');
+      try {
+        const data = JSON.parse(event.data);
+
+        switch (data.type) {
+          case 'thinking':
+            currentThinkingText = data.data || 'Thinking...';
+            updateThinkingText(thinkingEl, currentThinkingText);
+            break;
+
+          case 'tool_start':
+            currentThinkingText = `Using ${data.data.name}...`;
+            updateThinkingText(thinkingEl, currentThinkingText);
+            break;
+
+          case 'tool_end':
+            toolCalls.push({
+              name: data.data.name,
+              args: data.data.args,
+              result: data.data.result,
+            });
+            break;
+
+          case 'response':
+            response = data.data;
+            break;
+
+          case 'stream':
+            response += data.data;
+            break;
+
+          case 'error':
+            throw new Error(data.data);
+        }
+      } catch (e) {
+        if (e.message !== 'Unexpected end of JSON input') {
+          console.error('Parse error:', e);
+        }
       }
-      thinkingEl.innerHTML = `<div class="agent-step">✅ Completed in ${result.iterations} iterations</div>`;
-    } else {
-      responseEl.innerHTML = `<span style="color:var(--danger)">${escapeHtml(result.error)}</span>`;
-    }
+    };
+
+    eventSource.onerror = (err) => {
+      eventSource.close();
+      removeThinkingIndicator(thinkingEl);
+
+      if (!response) {
+        // Fallback to non-streaming if SSE fails
+        fallbackToNonStreaming(message, model, thinkingEl);
+      } else {
+        addMessage('assistant', response, toolCalls);
+        isProcessing = false;
+        sendBtn.disabled = false;
+      }
+    };
+
+  } catch (err) {
+    removeThinkingIndicator(thinkingEl);
+    addMessage('assistant', `Error: ${err.message}`);
+    isProcessing = false;
+    sendBtn.disabled = false;
   }
 }
 
-// ===== Tools =====
-async function runCalculator() {
-  const expr = $('#calc-expr').value.trim();
-  if (!expr) return;
-  const result = await api('/api/tools/calculator', {
-    method: 'POST',
-    body: JSON.stringify({ expression: expr }),
-  });
-  $('#calc-result').innerHTML = result.result !== undefined
-    ? `<strong>${expr}</strong> = <span style="color:var(--success)">${result.result}</span>`
-    : `<span style="color:var(--danger)">${result.error || 'Invalid'}</span>`;
-}
-
-async function runDateTime() {
-  const tz = $('#dt-tz').value;
-  const result = await api('/api/tools/datetime', {
-    method: 'POST',
-    body: JSON.stringify({ timezone: tz }),
-  });
-  $('#dt-result').innerHTML = result.datetime
-    ? `<strong>${result.datetime}</strong><br><span style="color:var(--text-muted)">${result.timezone}</span>`
-    : `<span style="color:var(--danger)">${result.error}</span>`;
-}
-
-async function runWebSearchTool() {
-  const query = $('#tool-search').value.trim();
-  if (!query) return;
-  showLoading('Searching...');
-  const result = await api('/api/web/search', {
-    method: 'POST',
-    body: JSON.stringify({ query, maxResults: 3 }),
-  });
-  hideLoading();
-  $('#search-result').innerHTML = result.success
-    ? result.results.map(r => `<div style="margin-bottom:0.5rem"><strong>${escapeHtml(r.title)}</strong></div>`).join('')
-    : `<span style="color:var(--danger)">${result.error}</span>`;
-}
-
-async function runFetchTool() {
-  const url = $('#tool-url').value.trim();
-  if (!url) return;
-  showLoading('Fetching...');
-  const result = await api('/api/web/fetch', {
-    method: 'POST',
-    body: JSON.stringify({ url }),
-  });
-  hideLoading();
-  $('#fetch-result').innerHTML = result.success
-    ? `<strong>${escapeHtml(result.title || 'No title')}</strong><br><span style="color:var(--text-muted)">${escapeHtml((result.content || '').slice(0, 200))}...</span>`
-    : `<span style="color:var(--danger)">${result.error}</span>`;
-}
-
-// ===== Init =====
-window.addEventListener('DOMContentLoaded', async () => {
+// Fallback to non-streaming request
+async function fallbackToNonStreaming(message, model, thinkingEl) {
   try {
-    await api('/api/rag/init', { method: 'POST', body: JSON.stringify({}) });
-    updateDocCount();
-  } catch {}
-});
+    updateThinkingText(thinkingEl, 'Processing...');
+
+    const res = await fetch(`${API_BASE}/api/agent/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ task: message, model }),
+    });
+
+    const data = await res.json();
+    removeThinkingIndicator(thinkingEl);
+
+    if (data.success) {
+      addMessage('assistant', data.output, data.toolCalls || []);
+    } else {
+      addMessage('assistant', `Error: ${data.error}`);
+    }
+  } catch (err) {
+    removeThinkingIndicator(thinkingEl);
+    addMessage('assistant', `Error: ${err.message}`);
+  } finally {
+    isProcessing = false;
+    sendBtn.disabled = false;
+  }
+}
+
+// Add message to chat
+function addMessage(role, content, toolCalls = []) {
+  const messageDiv = document.createElement('div');
+  messageDiv.className = `message ${role}`;
+
+  const avatar = role === 'user' ? '👤' : '🤖';
+
+  let toolCallsHtml = '';
+  if (toolCalls.length > 0) {
+    toolCallsHtml = `
+      <div class="tool-calls">
+        ${toolCalls.map(tc => `
+          <div class="tool-call">
+            <span class="tool-icon">${toolIcons[tc.name] || '🔧'}</span>
+            <span class="tool-name">${tc.name}</span>
+            <span class="tool-result">${getToolResultSummary(tc)}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  messageDiv.innerHTML = `
+    <div class="message-avatar">${avatar}</div>
+    <div class="message-content">
+      <div class="message-text">${formatMessage(content)}</div>
+      ${toolCallsHtml}
+    </div>
+  `;
+
+  messagesContainer.appendChild(messageDiv);
+  scrollToBottom();
+}
+
+// Get tool result summary
+function getToolResultSummary(tc) {
+  if (!tc.result) return '';
+
+  if (typeof tc.result === 'string') {
+    return tc.result.length > 50 ? tc.result.slice(0, 50) + '...' : tc.result;
+  }
+
+  if (tc.name === 'web_search') {
+    const results = tc.result.results || tc.result;
+    return Array.isArray(results) ? `${results.length} results` : '';
+  }
+
+  if (tc.name === 'calculator') {
+    return tc.result.result !== undefined ? `= ${tc.result.result}` : '';
+  }
+
+  if (tc.name === 'get_datetime') {
+    return tc.result.formatted || tc.result.datetime || '';
+  }
+
+  return 'Done';
+}
+
+// Format message content
+function formatMessage(content) {
+  if (!content) return '';
+
+  // Escape HTML
+  let formatted = content
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Code blocks
+  formatted = formatted.replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+
+  // Inline code
+  formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Bold
+  formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+  // Italic
+  formatted = formatted.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+  // Links
+  formatted = formatted.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+  // Line breaks
+  formatted = formatted.replace(/\n/g, '<br>');
+
+  return formatted;
+}
+
+// Add thinking indicator
+function addThinkingIndicator() {
+  const div = document.createElement('div');
+  div.className = 'message assistant thinking-message';
+  div.innerHTML = `
+    <div class="message-avatar">🤖</div>
+    <div class="message-content">
+      <div class="thinking">
+        <div class="thinking-dots">
+          <span></span><span></span><span></span>
+        </div>
+        <span class="thinking-text">Thinking...</span>
+      </div>
+    </div>
+  `;
+  messagesContainer.appendChild(div);
+  scrollToBottom();
+  return div;
+}
+
+// Update thinking text
+function updateThinkingText(el, text) {
+  if (el) {
+    const textEl = el.querySelector('.thinking-text');
+    if (textEl) textEl.textContent = text;
+  }
+}
+
+// Remove thinking indicator
+function removeThinkingIndicator(el) {
+  if (el && el.parentNode) {
+    el.parentNode.removeChild(el);
+  }
+}
+
+// Scroll to bottom
+function scrollToBottom() {
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// Add document to knowledge base
+async function addDocument() {
+  const content = document.getElementById('doc-text').value.trim();
+  const source = document.getElementById('doc-source').value.trim();
+
+  if (!content) {
+    showToast('Please enter document content', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/rag/add`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content,
+        metadata: source ? { source } : {}
+      }),
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      showToast(`Added document (${data.totalChunks} chunks total)`, 'success');
+      document.getElementById('doc-text').value = '';
+      document.getElementById('doc-source').value = '';
+      updateDocCount();
+    } else {
+      showToast(data.error, 'error');
+    }
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// Add URL to knowledge base
+async function addUrl() {
+  const url = document.getElementById('doc-url').value.trim();
+
+  if (!url) {
+    showToast('Please enter a URL', 'error');
+    return;
+  }
+
+  try {
+    showToast('Fetching URL...', 'info');
+
+    const res = await fetch(`${API_BASE}/api/rag/add-url`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      showToast(`Indexed URL (${data.totalChunks} chunks total)`, 'success');
+      document.getElementById('doc-url').value = '';
+      updateDocCount();
+    } else {
+      showToast(data.error, 'error');
+    }
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// Clear knowledge base
+async function clearKnowledgeBase() {
+  if (!confirm('Clear all documents from knowledge base?')) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/rag/clear`, { method: 'POST' });
+    const data = await res.json();
+
+    if (data.success) {
+      showToast('Knowledge base cleared', 'success');
+      updateDocCount();
+    } else {
+      showToast(data.error, 'error');
+    }
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// Apply settings
+async function applySettings() {
+  await initRAG();
+  settingsModal.classList.remove('active');
+  showToast('Settings applied', 'success');
+}
+
+// Show toast notification
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toasts');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
