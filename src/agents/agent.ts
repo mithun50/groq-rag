@@ -176,7 +176,7 @@ Always provide clear, accurate, and helpful responses.`;
       });
 
       let content = '';
-      let currentToolCalls: Groq.Chat.ChatCompletionMessageToolCall[] = [];
+      const currentToolCalls: Groq.Chat.ChatCompletionMessageToolCall[] = [];
 
       for await (const chunk of response) {
         const delta = chunk.choices[0]?.delta;

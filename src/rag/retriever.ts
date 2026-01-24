@@ -1,5 +1,4 @@
 import {
-  Document,
   DocumentChunk,
   EmbeddingProvider,
   RAGOptions,

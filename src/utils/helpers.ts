@@ -57,8 +57,9 @@ export function truncateToTokens(text: string, maxTokens: number): string {
  */
 export function cleanText(text: string): string {
   return text
-    .replace(/\s+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
+    .replace(/[^\S\n]+/g, ' ')
+    .replace(/ ?\n ?/g, '\n')
     .trim();
 }
 

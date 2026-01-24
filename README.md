@@ -1,15 +1,20 @@
 # groq-rag
 
+[![CI](https://github.com/mithun50/groq-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/mithun50/groq-rag/actions/workflows/ci.yml)
+[![npm version](https://badge.fury.io/js/groq-rag.svg)](https://www.npmjs.com/package/groq-rag)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Extended Groq SDK with RAG (Retrieval-Augmented Generation), web browsing, and agent capabilities.
 
 ## Features
 
-- **RAG Support**: Built-in vector store and document retrieval
-- **Web Fetching**: Fetch and parse web pages to markdown
-- **Web Search**: DuckDuckGo, Brave, and Serper search integration
+- **RAG Support**: Built-in vector store and document retrieval with chunking strategies
+- **Web Fetching**: Fetch and parse web pages to clean markdown
+- **Web Search**: DuckDuckGo (free), Brave Search, and Serper (Google) integration
 - **Tool System**: Extensible tool framework with built-in tools
-- **Agents**: ReAct-style agents with tool use and streaming
+- **Agents**: ReAct-style agents with tool use, memory, and streaming
 - **TypeScript**: Full type safety and IntelliSense support
+- **Zero Config**: Works out of the box with sensible defaults
 
 ## Installation
 
@@ -45,16 +50,18 @@ import GroqRAG from 'groq-rag';
 
 const client = new GroqRAG();
 
-// Initialize RAG
+// Initialize RAG (uses in-memory vector store by default)
 await client.initRAG();
 
-// Add documents
+// Add documents to the knowledge base
 await client.rag.addDocument('Your document content here...');
+await client.rag.addDocument('Another document...', { source: 'manual.pdf' });
 
-// Chat with context
+// Chat with context retrieval
 const response = await client.chat.withRAG({
-  messages: [{ role: 'user', content: 'What does the document say?' }],
-  topK: 5,
+  messages: [{ role: 'user', content: 'What does the document say about X?' }],
+  topK: 5,        // Number of chunks to retrieve
+  minScore: 0.5,  // Minimum similarity score
 });
 
 console.log(response.content);
@@ -66,6 +73,7 @@ console.log('Sources:', response.sources);
 ```typescript
 const response = await client.chat.withWebSearch({
   messages: [{ role: 'user', content: 'Latest AI news?' }],
+  maxResults: 5,
 });
 
 console.log(response.content);
@@ -77,33 +85,46 @@ console.log('Sources:', response.sources);
 ```typescript
 // Fetch and parse a URL
 const result = await client.web.fetch('https://example.com');
+console.log(result.title);
 console.log(result.markdown);
 
-// Chat about a URL
+// Chat about a URL's content
 const response = await client.chat.withUrl({
   messages: [{ role: 'user', content: 'Summarize this page' }],
-  url: 'https://example.com',
+  url: 'https://example.com/article',
 });
 ```
 
 ### Agents with Tools
 
 ```typescript
+// Create agent with built-in tools
 const agent = await client.createAgentWithBuiltins({
   model: 'llama-3.3-70b-versatile',
   verbose: true,
 });
 
-const result = await agent.run('Search for recent AI developments and summarize');
+const result = await agent.run('Search for recent AI news and summarize the top 3 stories');
 console.log(result.output);
+console.log('Tools used:', result.toolCalls.map(t => t.name));
 ```
 
 ### Streaming Agent
 
 ```typescript
+const agent = await client.createAgentWithBuiltins();
+
 for await (const event of agent.runStream('Research topic X')) {
-  if (event.type === 'content') {
-    process.stdout.write(event.data);
+  switch (event.type) {
+    case 'content':
+      process.stdout.write(event.data as string);
+      break;
+    case 'tool_call':
+      console.log('\n[Calling tool...]');
+      break;
+    case 'tool_result':
+      console.log('[Tool completed]');
+      break;
   }
 }
 ```
@@ -114,33 +135,45 @@ for await (const event of agent.runStream('Research topic X')) {
 
 ```typescript
 const client = new GroqRAG({
-  apiKey?: string,      // Groq API key (or use GROQ_API_KEY env)
+  apiKey?: string,      // Groq API key (defaults to GROQ_API_KEY env var)
   baseURL?: string,     // Custom API base URL
-  timeout?: number,     // Request timeout in ms
-  maxRetries?: number,  // Max retry attempts
+  timeout?: number,     // Request timeout in milliseconds
+  maxRetries?: number,  // Max retry attempts (default: 2)
 });
 ```
 
 ### RAG Module
 
 ```typescript
-// Initialize with options
+// Initialize with custom configuration
 await client.initRAG({
-  embedding: { provider: 'groq' | 'openai' },
-  vectorStore: { provider: 'memory' | 'chroma' },
-  chunking: { strategy: 'recursive', chunkSize: 1000 },
+  embedding: {
+    provider: 'groq' | 'openai',
+    apiKey: 'optional-key',
+    model: 'text-embedding-3-small',
+  },
+  vectorStore: {
+    provider: 'memory' | 'chroma',
+    connectionString: 'http://localhost:8000',
+    indexName: 'my-collection',
+  },
+  chunking: {
+    strategy: 'recursive' | 'fixed' | 'sentence' | 'paragraph',
+    chunkSize: 1000,
+    chunkOverlap: 200,
+  },
 });
 
-// Add documents
+// Document operations
 await client.rag.addDocument(content, metadata?);
 await client.rag.addDocuments([{ content, metadata }]);
 await client.rag.addUrl('https://example.com');
 
-// Query
-const results = await client.rag.query('search query', { topK: 5 });
-const context = await client.rag.getContext('query');
+// Querying
+const results = await client.rag.query('search query', { topK: 5, minScore: 0.5 });
+const context = await client.rag.getContext('query', { includeMetadata: true });
 
-// Manage
+// Management
 await client.rag.clear();
 const count = await client.rag.count();
 ```
@@ -149,32 +182,58 @@ const count = await client.rag.count();
 
 ```typescript
 // Fetch URLs
-const result = await client.web.fetch(url, options?);
+const result = await client.web.fetch(url, {
+  headers: {},
+  timeout: 30000,
+  includeLinks: true,
+  includeImages: false,
+});
+
 const results = await client.web.fetchMany(urls);
 const markdown = await client.web.fetchMarkdown(url);
 
-// Search
-const results = await client.web.search('query', { maxResults: 10 });
+// Search the web
+const results = await client.web.search('query', {
+  maxResults: 10,
+  safeSearch: true,
+});
 ```
 
 ### Chat Module
 
 ```typescript
-// With RAG
-await client.chat.withRAG({ messages, topK?, minScore? });
+// RAG-augmented chat
+await client.chat.withRAG({
+  messages,
+  model?: string,
+  topK?: number,
+  minScore?: number,
+  includeMetadata?: boolean,
+  systemPrompt?: string,
+});
 
-// With web search
-await client.chat.withWebSearch({ messages, searchQuery?, maxResults? });
+// Web search chat
+await client.chat.withWebSearch({
+  messages,
+  model?: string,
+  searchQuery?: string,
+  maxResults?: number,
+});
 
-// With URL content
-await client.chat.withUrl({ messages, url });
+// URL content chat
+await client.chat.withUrl({
+  messages,
+  url: string,
+  model?: string,
+});
 ```
 
 ### Agents
 
 ```typescript
-// Create agent
+// Create basic agent
 const agent = client.createAgent({
+  name?: string,
   model?: string,
   systemPrompt?: string,
   tools?: ToolDefinition[],
@@ -185,45 +244,59 @@ const agent = client.createAgent({
 // Create with built-in tools
 const agent = await client.createAgentWithBuiltins(config);
 
-// Run
-const result = await agent.run('task');
+// Execute
+const result = await agent.run('task description');
 
-// Stream
-for await (const event of agent.runStream('task')) { }
+// Stream execution
+for await (const event of agent.runStream('task')) {
+  // Handle events: 'content', 'tool_call', 'tool_result', 'done'
+}
+
+// Memory management
+agent.clearHistory();
+const history = agent.getHistory();
 ```
 
 ### Built-in Tools
 
-- `web_search` - Search the web using DuckDuckGo
-- `fetch_url` - Fetch and parse web pages
-- `rag_query` - Query the knowledge base
-- `calculator` - Mathematical calculations
-- `get_datetime` - Get current date/time
+| Tool | Description |
+|------|-------------|
+| `web_search` | Search the web using DuckDuckGo |
+| `fetch_url` | Fetch and parse web pages |
+| `rag_query` | Query the knowledge base |
+| `calculator` | Mathematical calculations |
+| `get_datetime` | Get current date/time |
 
 ### Custom Tools
 
 ```typescript
+import { ToolDefinition } from 'groq-rag';
+
 const myTool: ToolDefinition = {
   name: 'my_tool',
   description: 'Does something useful',
   parameters: {
     type: 'object',
     properties: {
-      input: { type: 'string', description: 'The input' },
+      input: { type: 'string', description: 'The input value' },
+      count: { type: 'number', description: 'How many times' },
     },
     required: ['input'],
   },
   execute: async (params) => {
-    return { result: 'done' };
+    const { input, count = 1 } = params as { input: string; count?: number };
+    return { result: input.repeat(count) };
   },
 };
 
-agent.addTool(myTool);
+const agent = client.createAgent({ tools: [myTool] });
 ```
 
-## Vector Store Providers
+## Configuration
 
-### In-Memory (Default)
+### Vector Store Providers
+
+#### In-Memory (Default)
 
 ```typescript
 await client.initRAG({
@@ -231,7 +304,9 @@ await client.initRAG({
 });
 ```
 
-### ChromaDB
+Best for: Development, testing, small datasets.
+
+#### ChromaDB
 
 ```typescript
 await client.initRAG({
@@ -243,11 +318,23 @@ await client.initRAG({
 });
 ```
 
-## Embedding Providers
+Best for: Production, large datasets, persistence.
 
-### Groq (Default)
+### Embedding Providers
 
-Uses a pseudo-embedding for demos. For production, use OpenAI:
+#### Groq (Default)
+
+Uses a deterministic pseudo-embedding for demos. Suitable for testing.
+
+```typescript
+await client.initRAG({
+  embedding: { provider: 'groq' },
+});
+```
+
+#### OpenAI
+
+For production use with high-quality embeddings:
 
 ```typescript
 await client.initRAG({
@@ -255,20 +342,21 @@ await client.initRAG({
     provider: 'openai',
     apiKey: process.env.OPENAI_API_KEY,
     model: 'text-embedding-3-small',
+    dimensions: 1536,
   },
 });
 ```
 
-## Search Providers
+### Search Providers
 
-### DuckDuckGo (Default, No API Key)
+#### DuckDuckGo (Default, No API Key)
 
 ```typescript
 import { createSearchProvider } from 'groq-rag';
 const search = createSearchProvider({ provider: 'duckduckgo' });
 ```
 
-### Brave Search
+#### Brave Search
 
 ```typescript
 const search = createSearchProvider({
@@ -277,7 +365,7 @@ const search = createSearchProvider({
 });
 ```
 
-### Serper (Google)
+#### Serper (Google)
 
 ```typescript
 const search = createSearchProvider({
@@ -286,6 +374,83 @@ const search = createSearchProvider({
 });
 ```
 
+## Text Chunking Strategies
+
+| Strategy | Description | Best For |
+|----------|-------------|----------|
+| `recursive` | Splits by separators, falls back to smaller separators | General purpose (default) |
+| `fixed` | Fixed character size with overlap | Uniform chunk sizes |
+| `sentence` | Splits by sentence boundaries | Preserving sentence context |
+| `paragraph` | Splits by paragraphs | Document structure preservation |
+
+```typescript
+await client.initRAG({
+  chunking: {
+    strategy: 'recursive',
+    chunkSize: 1000,
+    chunkOverlap: 200,
+  },
+});
+```
+
+## Utilities
+
+```typescript
+import {
+  chunkText,
+  cosineSimilarity,
+  estimateTokens,
+  formatContext,
+  extractUrls,
+} from 'groq-rag';
+
+// Chunk text manually
+const chunks = chunkText('Long text...', 'doc-id', { chunkSize: 500 });
+
+// Calculate similarity
+const similarity = cosineSimilarity(embedding1, embedding2);
+
+// Estimate tokens
+const tokenCount = estimateTokens('Some text');
+```
+
+## Examples
+
+See the [examples](./examples) directory for complete usage examples:
+
+- `basic-chat.ts` - Simple chat completion
+- `rag-chat.ts` - RAG-augmented conversation
+- `web-search.ts` - Web search integration
+- `url-fetch.ts` - URL fetching and summarization
+- `agent.ts` - Agent with tools
+- `streaming-agent.ts` - Streaming agent execution
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Build
+npm run build
+
+# Lint
+npm run lint
+
+# Type check
+npm run typecheck
+```
+
+## Contributing
+
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details.
+
 ## License
 
-MIT
+MIT - see [LICENSE](LICENSE) for details.

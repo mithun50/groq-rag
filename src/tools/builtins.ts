@@ -142,10 +142,15 @@ export function createCalculatorTool(): ToolDefinition {
         .replace(/e(?![xp])/gi, 'Math.E');
 
       try {
-        // eslint-disable-next-line no-new-func
+        if (!sanitized.trim()) {
+          return { expression, error: 'Invalid expression' };
+        }
         const result = new Function(`return ${sanitized}`)();
+        if (result === undefined || (typeof result === 'number' && isNaN(result))) {
+          return { expression, error: 'Invalid expression' };
+        }
         return { expression, result };
-      } catch (error) {
+      } catch {
         return { expression, error: 'Invalid expression' };
       }
     },

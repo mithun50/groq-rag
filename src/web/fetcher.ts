@@ -72,7 +72,6 @@ export class WebFetcher {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const contentType = response.headers.get('content-type') || '';
       const html = await response.text();
 
       clearTimeout(timeoutId);

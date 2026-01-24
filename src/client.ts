@@ -1,7 +1,6 @@
 import Groq from 'groq-sdk';
 import type {
   ChatCompletion,
-  ChatCompletionChunk,
   ChatCompletionCreateParamsNonStreaming,
   ChatCompletionCreateParamsStreaming,
 } from 'groq-sdk/resources/chat/completions';
@@ -25,10 +24,7 @@ import { createEmbeddingProvider } from './rag/embeddings';
 import { WebFetcher, createFetcher } from './web/fetcher';
 import { createSearchProvider, SearchProvider } from './web/search';
 import { Agent, createAgent } from './agents/agent';
-import { ToolExecutor } from './tools/executor';
 import {
-  createWebSearchTool,
-  createFetchUrlTool,
   createRAGQueryTool,
   getBuiltinTools,
 } from './tools/builtins';
