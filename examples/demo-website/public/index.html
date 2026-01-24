@@ -2,133 +2,160 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>groq-rag | Smart AI Assistant</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="app-container">
+  <div class="app">
     <!-- Header -->
     <header class="header">
-      <div class="logo">
-        <span class="logo-icon">🚀</span>
-        <span class="logo-text">groq-rag</span>
+      <div class="header-left">
+        <div class="logo">
+          <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+          <span class="logo-text">groq-rag</span>
+        </div>
       </div>
-      <div class="header-center">
-        <span class="tagline">Smart AI with RAG + Web + Tools</span>
-      </div>
-      <div class="header-actions">
-        <select id="model-select" class="model-select">
+      <div class="header-right">
+        <select id="model-select" class="select">
           <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
           <option value="llama-3.1-8b-instant">Llama 3.1 8B</option>
           <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
         </select>
-        <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
+        <button id="kb-toggle" class="header-btn" title="Knowledge Base">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+          <span class="badge" id="doc-badge">0</span>
+        </button>
+        <button id="settings-btn" class="header-btn" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
       </div>
     </header>
 
-    <!-- Main Chat Area -->
-    <main class="chat-main">
-      <div class="messages-container" id="messages">
-        <!-- Welcome Message -->
-        <div class="message assistant">
-          <div class="message-avatar">🤖</div>
-          <div class="message-content">
-            <div class="message-text">
-              <p><strong>Welcome!</strong> I'm your AI assistant powered by Groq.</p>
-              <p>I can automatically:</p>
-              <ul>
-                <li>🔍 <strong>Search the web</strong> for current information</li>
-                <li>📄 <strong>Fetch & read URLs</strong> you share</li>
-                <li>📚 <strong>Query your knowledge base</strong> (add docs below)</li>
-                <li>🧮 <strong>Calculate</strong> math expressions</li>
-                <li>🕐 <strong>Get date/time</strong> for any timezone</li>
-              </ul>
-              <p>Just ask naturally - I'll use the right tools automatically!</p>
-            </div>
+    <!-- Chat Container -->
+    <div class="chat-container">
+      <!-- Messages -->
+      <div class="messages" id="messages">
+        <div class="welcome">
+          <div class="welcome-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+          </div>
+          <h1>groq-rag Assistant</h1>
+          <p>I automatically search the web, fetch URLs, query your documents, calculate, and more.</p>
+          <div class="capabilities">
+            <div class="cap"><span class="cap-icon">🔍</span>Web Search</div>
+            <div class="cap"><span class="cap-icon">📄</span>URL Fetch</div>
+            <div class="cap"><span class="cap-icon">📚</span>RAG Query</div>
+            <div class="cap"><span class="cap-icon">🧮</span>Calculator</div>
+            <div class="cap"><span class="cap-icon">🕐</span>Date/Time</div>
           </div>
         </div>
       </div>
 
       <!-- Input Area -->
-      <div class="input-area">
-        <div class="input-container">
+      <div class="input-wrapper">
+        <div class="suggestions" id="suggestions">
+          <button class="suggestion" data-text="What's the latest news about AI?">Latest AI news</button>
+          <button class="suggestion" data-text="What time is it in Tokyo?">Time in Tokyo</button>
+          <button class="suggestion" data-text="Calculate 15% of 847">Calculate 15% of 847</button>
+        </div>
+        <div class="input-box">
           <textarea
             id="user-input"
-            placeholder="Ask me anything... I'll search the web, fetch URLs, or use your documents automatically!"
+            placeholder="Ask anything..."
             rows="1"
+            autocomplete="off"
           ></textarea>
-          <button id="send-btn" class="send-btn" title="Send">
-            <span>➤</span>
+          <button id="send-btn" class="send-btn" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
           </button>
         </div>
-        <div class="input-hints">
-          <span class="hint">Try: "What's the latest news about AI?"</span>
-          <span class="hint">Try: "Summarize https://example.com"</span>
-          <span class="hint">Try: "What's 15% of 847?"</span>
-        </div>
       </div>
-    </main>
+    </div>
 
-    <!-- Expandable Knowledge Base Panel -->
-    <aside class="knowledge-panel" id="knowledge-panel">
-      <div class="panel-header" id="panel-toggle">
-        <span class="panel-icon">📚</span>
-        <span class="panel-title">Knowledge Base</span>
-        <span class="doc-count" id="doc-count">0 docs</span>
-        <span class="panel-arrow">▲</span>
+    <!-- Knowledge Base Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>Knowledge Base</h2>
+        <button id="sidebar-close" class="close-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
-      <div class="panel-content" id="panel-content">
-        <div class="kb-tabs">
-          <button class="kb-tab active" data-tab="text">Add Text</button>
-          <button class="kb-tab" data-tab="url">Add URL</button>
+      <div class="sidebar-content">
+        <div class="tabs">
+          <button class="tab active" data-tab="text">Text</button>
+          <button class="tab" data-tab="url">URL</button>
         </div>
-        <div class="kb-tab-content active" id="tab-text">
-          <textarea id="doc-text" placeholder="Paste document content here..."></textarea>
+        <div class="tab-panel active" id="panel-text">
+          <textarea id="doc-text" placeholder="Paste your document content here..." rows="6"></textarea>
           <input type="text" id="doc-source" placeholder="Source name (optional)">
-          <button id="add-doc-btn" class="btn">Add to Knowledge Base</button>
+          <button id="add-doc-btn" class="btn primary full">Add Document</button>
         </div>
-        <div class="kb-tab-content" id="tab-url">
+        <div class="tab-panel" id="panel-url">
           <input type="url" id="doc-url" placeholder="https://example.com/article">
-          <button id="add-url-btn" class="btn">Fetch & Index URL</button>
+          <button id="add-url-btn" class="btn primary full">Fetch & Index</button>
         </div>
-        <div class="kb-actions">
-          <button id="clear-kb-btn" class="btn-text danger">Clear All</button>
+        <div class="sidebar-footer">
+          <span id="doc-count">0 documents indexed</span>
+          <button id="clear-kb-btn" class="btn-link danger">Clear All</button>
         </div>
       </div>
     </aside>
-  </div>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-  <!-- Settings Modal -->
-  <div class="modal-overlay" id="settings-modal">
-    <div class="modal">
-      <div class="modal-header">
-        <h2>Settings</h2>
-        <button class="modal-close" id="close-settings">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="setting-group">
-          <label>RAG Chunking Strategy</label>
-          <select id="chunk-strategy">
-            <option value="recursive">Recursive (default)</option>
-            <option value="fixed">Fixed Size</option>
-            <option value="sentence">Sentence</option>
-            <option value="paragraph">Paragraph</option>
-          </select>
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settings-modal">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>Settings</h2>
+          <button id="close-settings" class="close-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         </div>
-        <div class="setting-group">
-          <label>Chunk Size</label>
-          <input type="number" id="chunk-size" value="500">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="chunk-strategy">Chunking Strategy</label>
+            <select id="chunk-strategy" class="select full">
+              <option value="recursive">Recursive (Recommended)</option>
+              <option value="fixed">Fixed Size</option>
+              <option value="sentence">Sentence</option>
+              <option value="paragraph">Paragraph</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="chunk-size">Chunk Size</label>
+            <input type="number" id="chunk-size" class="input full" value="500">
+          </div>
+          <button id="apply-settings" class="btn primary full">Apply Settings</button>
         </div>
-        <button id="apply-settings" class="btn primary">Apply Settings</button>
       </div>
     </div>
-  </div>
 
-  <!-- Toast Container -->
-  <div id="toasts" class="toast-container"></div>
+    <!-- Toast Container -->
+    <div id="toasts" class="toasts"></div>
+  </div>
 
   <script src="app.js"></script>
 </body>
