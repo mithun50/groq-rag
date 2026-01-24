@@ -181,17 +181,29 @@ async function send() {
       try {
         const data = JSON.parse(e.data);
 
-        if (data.type === 'thinking' || data.type === 'tool_start') {
-          const label = data.type === 'tool_start'
+        if (data.type === 'thinking' || data.type === 'tool_start' || data.type === 'tool_call') {
+          const label = data.type === 'tool_call'
             ? `Using ${data.data.name}...`
-            : (data.data || 'Thinking...');
+            : data.type === 'tool_start'
+              ? `Using ${data.data.name}...`
+              : (data.data || 'Thinking...');
           thinking.querySelector('.thinking-text').textContent = label;
-        } else if (data.type === 'tool_end') {
-          tools.push(data.data);
+        } else if (data.type === 'tool_end' || data.type === 'tool_result') {
+          if (data.data && data.data.name) {
+            tools.push(data.data);
+          } else if (data.data && data.data.result) {
+            // tool_result format from agent
+            tools.push({ name: 'tool', result: data.data.result });
+          }
         } else if (data.type === 'response') {
           response = data.data;
-        } else if (data.type === 'stream') {
+        } else if (data.type === 'stream' || data.type === 'content') {
           response += data.data;
+        } else if (data.type === 'done') {
+          // Final response from agent
+          if (data.data && data.data.output) {
+            response = data.data.output;
+          }
         } else if (data.type === 'error') {
           throw new Error(data.data);
         }
