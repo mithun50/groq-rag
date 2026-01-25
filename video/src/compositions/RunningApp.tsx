@@ -41,9 +41,9 @@ export const RunningApp: React.FC = () => {
     const totalLines = BOT_OUTPUT.length;
     const lineProgress = currentOutputLine / Math.max(1, totalLines - 1);
 
-    // Keep scale readable - don't zoom out too much!
-    const baseScale = 1.4;     // Start zoomed
-    const minScale = 1.25;     // Stay zoomed even at end
+    // Keep scale MORE ZOOMED IN for better text visibility
+    const baseScale = 1.85;    // Start very zoomed
+    const minScale = 1.7;      // Stay zoomed throughout
     const scaleProgress = easeInOutCubic(Math.min(1, lineProgress));
     const scale = round(baseScale - (baseScale - minScale) * scaleProgress);
 

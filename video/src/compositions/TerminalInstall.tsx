@@ -12,15 +12,15 @@ import { useKeyframeCamera } from "../hooks/useZoom";
 export const TerminalInstall: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // Smooth camera - readable text throughout
+  // Smooth camera - MORE ZOOMED IN for better text visibility
   const cameraKeyframes = [
-    { frame: 0, scale: 1.0, x: 0, y: 0 },            // Start normal
-    { frame: 40, scale: 1.15, x: 0, y: -10 },        // Slight zoom as typing starts
-    { frame: 120, scale: 1.3, x: 0, y: -30 },        // Zoom to command area
-    { frame: 300, scale: 1.35, x: 0, y: -50 },       // Follow progress
-    { frame: 500, scale: 1.2, x: 0, y: -30 },        // Pull back slightly for results
-    { frame: DURATIONS.terminalInstall - 60, scale: 1.1, x: 0, y: -15 }, // Ease out
-    { frame: DURATIONS.terminalInstall, scale: 1.0, x: 0, y: 0 }, // End normal
+    { frame: 0, scale: 1.5, x: 0, y: -20 },            // Start zoomed in
+    { frame: 40, scale: 1.7, x: 0, y: -40 },           // Zoom more as typing starts
+    { frame: 120, scale: 1.85, x: 0, y: -60 },         // Zoom to command area
+    { frame: 300, scale: 1.9, x: 0, y: -80 },          // Follow progress closely
+    { frame: 500, scale: 1.8, x: 0, y: -60 },          // Pull back slightly for results
+    { frame: DURATIONS.terminalInstall - 60, scale: 1.7, x: 0, y: -40 }, // Ease out
+    { frame: DURATIONS.terminalInstall, scale: 1.6, x: 0, y: -30 }, // End still zoomed
   ];
 
   const { transform } = useKeyframeCamera({ frame, keyframes: cameraKeyframes });
