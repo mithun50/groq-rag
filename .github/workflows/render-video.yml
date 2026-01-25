@@ -6,17 +6,17 @@ on:
       quality:
         description: 'Video quality'
         required: true
-        default: '1080p'
+        default: '720p'
         type: choice
         options:
-          - '1080p'
           - '720p'
+          - '1080p'
           - '4k'
 
 jobs:
   render:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       - name: Checkout code
@@ -26,25 +26,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-          cache-dependency-path: video/package-lock.json
-
-      - name: Install dependencies
-        working-directory: ./video
-        run: npm ci
 
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-      - name: Render video (1080p)
-        if: ${{ github.event.inputs.quality == '1080p' }}
+      - name: Install dependencies
         working-directory: ./video
-        run: npx remotion render Video out/groq-rag-video-1080p.mp4 --gl=angle
+        run: npm install
 
       - name: Render video (720p)
         if: ${{ github.event.inputs.quality == '720p' }}
         working-directory: ./video
         run: npx remotion render Video out/groq-rag-video-720p.mp4 --height=720 --width=1280 --gl=angle
+
+      - name: Render video (1080p)
+        if: ${{ github.event.inputs.quality == '1080p' }}
+        working-directory: ./video
+        run: npx remotion render Video out/groq-rag-video-1080p.mp4 --gl=angle
 
       - name: Render video (4K)
         if: ${{ github.event.inputs.quality == '4k' }}
@@ -63,4 +61,3 @@ jobs:
         run: |
           echo "Video rendered successfully!"
           ls -lh out/
-          ffprobe -v quiet -print_format json -show_format out/*.mp4 | head -20
