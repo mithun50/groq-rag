@@ -3,13 +3,12 @@ name: Test Coverage
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
 
 jobs:
   coverage:
     name: Generate Coverage Report
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
