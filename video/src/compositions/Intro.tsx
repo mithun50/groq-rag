@@ -35,14 +35,15 @@ export const Intro: React.FC = () => {
       <Spotlight x={50} y={45} size={600} intensity={0.1} color="rgba(88,166,255,0.1)" />
       <Spotlight x={25} y={70} size={400} intensity={0.06} color="rgba(163,113,247,0.08)" />
 
-      {/* Content */}
+      {/* Content - SCALED UP for better visibility */}
       <div
         style={{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          gap: 32,
+          gap: 40,
           zIndex: 10,
+          transform: "scale(1.4)",
         }}
       >
         <LogoMinimal frame={frame} />
@@ -92,9 +93,9 @@ const LogoMinimal: React.FC<LogoMinimalProps> = ({ frame }) => {
       {/* Logo Icon with gradient */}
       <div
         style={{
-          width: 80,
-          height: 80,
-          borderRadius: 20,
+          width: 100,
+          height: 100,
+          borderRadius: 24,
           background: GRADIENTS.primary,
           display: "flex",
           alignItems: "center",
@@ -106,8 +107,8 @@ const LogoMinimal: React.FC<LogoMinimalProps> = ({ frame }) => {
         }}
       >
         <svg
-          width={44}
-          height={44}
+          width={56}
+          height={56}
           viewBox="0 0 24 24"
           fill="none"
           stroke={COLORS.white}
@@ -124,7 +125,7 @@ const LogoMinimal: React.FC<LogoMinimalProps> = ({ frame }) => {
       {/* Logo Text */}
       <div
         style={{
-          fontSize: 56,
+          fontSize: 72,
           fontWeight: 600,
           color: COLORS.white,
           fontFamily: "'SF Pro Display', 'Inter', system-ui, sans-serif",
@@ -165,7 +166,7 @@ const TaglineMinimal: React.FC<TaglineMinimalProps> = ({ frame }) => {
     >
       <div
         style={{
-          fontSize: 22,
+          fontSize: 28,
           color: COLORS.white,
           fontFamily: "'SF Pro Display', 'Inter', system-ui, sans-serif",
           fontWeight: 400,

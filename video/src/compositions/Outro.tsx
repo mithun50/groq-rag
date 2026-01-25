@@ -30,15 +30,25 @@ export const Outro: React.FC = () => {
       <Particles count={40} speed={0.25} />
       <Spotlight x={50} y={45} size={600} intensity={0.08} />
 
-      {/* Content */}
-      <LogoFinal frame={frame} />
-      <Links frame={frame} />
-      <ThankYou frame={frame} />
-      <CallToAction frame={frame} />
+      {/* Content - SCALED UP for better visibility */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 35,
+          transform: "scale(1.4)",
+        }}
+      >
+        <LogoFinal frame={frame} />
+        <Links frame={frame} />
+        <ThankYou frame={frame} />
+        <CallToAction frame={frame} />
+      </div>
 
       {/* Overlays */}
-      <Vignette intensity={0.5} />
-      <FilmGrain intensity={0.02} />
+      <Vignette intensity={0.4} />
+      <FilmGrain intensity={0.015} />
     </AbsoluteFill>
   );
 };
@@ -76,9 +86,9 @@ const LogoFinal: React.FC<LogoFinalProps> = ({ frame }) => {
     >
       <div
         style={{
-          width: 64,
-          height: 64,
-          borderRadius: 14,
+          width: 80,
+          height: 80,
+          borderRadius: 18,
           backgroundColor: COLORS.white,
           display: "flex",
           alignItems: "center",
@@ -87,8 +97,8 @@ const LogoFinal: React.FC<LogoFinalProps> = ({ frame }) => {
         }}
       >
         <svg
-          width={36}
-          height={36}
+          width={46}
+          height={46}
           viewBox="0 0 24 24"
           fill="none"
           stroke={COLORS.background}
@@ -104,7 +114,7 @@ const LogoFinal: React.FC<LogoFinalProps> = ({ frame }) => {
 
       <div
         style={{
-          fontSize: 48,
+          fontSize: 60,
           fontWeight: 600,
           color: COLORS.white,
           fontFamily: "'SF Pro Display', 'Inter', system-ui, sans-serif",
@@ -177,7 +187,7 @@ const LinkItem: React.FC<LinkItemProps> = ({ icon, text }) => {
       <span
         style={{
           color: COLORS.white,
-          fontSize: 14,
+          fontSize: 16,
           fontFamily: "'SF Mono', monospace",
         }}
       >
@@ -212,7 +222,7 @@ const ThankYou: React.FC<ThankYouProps> = ({ frame }) => {
     >
       <span
         style={{
-          fontSize: 48,
+          fontSize: 56,
           fontWeight: 600,
           color: COLORS.white,
           fontFamily: "'SF Pro Display', 'Inter', system-ui, sans-serif",
@@ -274,7 +284,7 @@ const CallToAction: React.FC<CallToActionProps> = ({ frame }) => {
         <span
           style={{
             color: COLORS.background,
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: 600,
             fontFamily: "'SF Pro Display', 'Inter', system-ui, sans-serif",
           }}

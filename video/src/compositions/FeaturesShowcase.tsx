@@ -36,13 +36,14 @@ export const FeaturesShowcase: React.FC = () => {
       <Particles count={20} speed={0.15} />
       <Spotlight x={50} y={50} size={600} intensity={0.05} />
 
-      {/* Content */}
+      {/* Content - SCALED UP for better visibility */}
       <div
         style={{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          gap: 48,
+          gap: 60,
+          transform: "scale(1.5)",
         }}
       >
         <SectionTitle frame={frame} />
@@ -81,19 +82,19 @@ const SectionTitle: React.FC<SectionTitleProps> = ({ frame }) => {
     >
       <h2
         style={{
-          fontSize: 42,
+          fontSize: 56,
           fontWeight: 600,
           color: COLORS.white,
           fontFamily: "'SF Pro Display', 'Inter', system-ui, sans-serif",
           letterSpacing: "-0.02em",
-          marginBottom: 12,
+          marginBottom: 16,
         }}
       >
         Features
       </h2>
       <p
         style={{
-          fontSize: 16,
+          fontSize: 22,
           color: COLORS.white,
           fontFamily: "'SF Pro Display', 'Inter', system-ui, sans-serif",
         }}
@@ -187,11 +188,11 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
   return (
     <div
       style={{
-        width: 180,
-        padding: 24,
+        width: 200,
+        padding: 28,
         backgroundColor: COLORS.backgroundLight,
         border: `1px solid ${COLORS.gray[800]}`,
-        borderRadius: 12,
+        borderRadius: 16,
         opacity,
         transform: `translateY(${translateY}px) scale(${scale})`,
         textAlign: "center",
@@ -199,28 +200,28 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
     >
       <div
         style={{
-          fontSize: 32,
-          marginBottom: 12,
+          fontSize: 42,
+          marginBottom: 16,
           filter: "grayscale(100%)",
-          opacity: 0.8,
+          opacity: 0.9,
         }}
       >
         {icon}
       </div>
       <h3
         style={{
-          fontSize: 16,
+          fontSize: 20,
           fontWeight: 600,
           color: COLORS.white,
           fontFamily: "'SF Pro Display', 'Inter', system-ui, sans-serif",
-          marginBottom: 6,
+          marginBottom: 8,
         }}
       >
         {title}
       </h3>
       <p
         style={{
-          fontSize: 13,
+          fontSize: 15,
           color: COLORS.white,
           fontFamily: "'SF Pro Display', 'Inter', system-ui, sans-serif",
         }}

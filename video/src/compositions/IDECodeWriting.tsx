@@ -72,8 +72,8 @@ export const IDECodeWriting: React.FC = () => {
     typingStartFrame: startTypingFrame,
     typingEndFrame,
     totalDuration: DURATIONS.ideCodeWriting,
-    zoomedInScale: 2.2,       // More zoomed in for better readability
-    zoomedOutScale: 1.8,      // Stay zoomed - larger text
+    zoomedInScale: 1.8,       // Zoomed in but shows code context
+    zoomedOutScale: 1.5,      // Stay zoomed - readable text
     lineHeight: 24,
     editorPaddingTop: 60,
     zoomInDuration: 50,
