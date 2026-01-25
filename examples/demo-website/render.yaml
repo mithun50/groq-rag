@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: groq-rag-demo
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: GROQ_API_KEY
+        sync: false
