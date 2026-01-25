@@ -4,6 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
+[![Demo](https://img.shields.io/badge/Demo-Live-brightgreen.svg)](https://groq-rag.onrender.com)
 
 Extended Groq SDK with RAG (Retrieval-Augmented Generation), web browsing, and autonomous agent capabilities. Build intelligent AI applications that can search the web, fetch URLs, query knowledge bases, and reason through complex tasks.
 
