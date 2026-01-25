@@ -210,7 +210,7 @@ const BadgeRow: React.FC<BadgeRowProps> = ({ frame }) => {
       }}
     >
       <Badge text="TypeScript" />
-      <Badge text="v1.0.0" />
+      <Badge text="v0.1.2" />
       <Badge text="MIT" />
     </div>
   );
