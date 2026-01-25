@@ -1,0 +1,27 @@
+{
+  "name": "groq-rag-video",
+  "version": "1.0.0",
+  "description": "Professional SaaS product video for groq-rag library",
+  "scripts": {
+    "dev": "remotion studio",
+    "build": "remotion render Video out/video.mp4",
+    "build:720p": "remotion render Video out/video-720p.mp4 --height=720 --width=1280",
+    "preview": "remotion preview"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.242",
+    "@remotion/player": "^4.0.242",
+    "@remotion/transitions": "^4.0.242",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.242"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.7.2"
+  }
+}
