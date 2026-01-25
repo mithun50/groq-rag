@@ -3,7 +3,8 @@ import { useCurrentFrame, interpolate, AbsoluteFill } from "remotion";
 import { MacBook } from "../components/MacBook";
 import { Terminal, RealisticTerminalOutput } from "../components/Terminal";
 import { Vignette, Spotlight, FilmGrain } from "../components/Particles";
-import { COLORS, GRADIENTS } from "../utils/colors";
+import { Background } from "../components/Background";
+import { COLORS } from "../utils/colors";
 import { DURATIONS } from "../utils/animations";
 import { NPM_INSTALL_OUTPUT } from "../utils/code-samples";
 import { useKeyframeCamera } from "../hooks/useZoom";
@@ -43,15 +44,8 @@ export const TerminalInstall: React.FC = () => {
         opacity: fadeIn * fadeOut,
       }}
     >
-      {/* macOS mesh gradient background */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: GRADIENTS.mesh,
-          opacity: 0.5,
-        }}
-      />
+      {/* Professional background */}
+      <Background opacity={1} />
 
       {/* Colored ambient lighting */}
       <Spotlight x={50} y={30} size={600} intensity={0.08} color="rgba(88,166,255,0.1)" />
@@ -67,6 +61,7 @@ export const TerminalInstall: React.FC = () => {
           justifyContent: "center",
           transform,
           transformOrigin: "center center",
+          willChange: "transform",
         }}
       >
         <MacBook scale={0.9} animate={false} showReflection={false}>

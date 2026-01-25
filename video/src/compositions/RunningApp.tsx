@@ -3,7 +3,8 @@ import { useCurrentFrame, interpolate, AbsoluteFill } from "remotion";
 import { MacBook } from "../components/MacBook";
 import { Terminal, RealisticTerminalOutput } from "../components/Terminal";
 import { Vignette, Spotlight, FilmGrain } from "../components/Particles";
-import { COLORS, GRADIENTS } from "../utils/colors";
+import { Background } from "../components/Background";
+import { COLORS } from "../utils/colors";
 import { DURATIONS, easeInOutCubic } from "../utils/animations";
 import { BOT_OUTPUT } from "../utils/code-samples";
 
@@ -31,7 +32,11 @@ export const RunningApp: React.FC = () => {
     return BOT_OUTPUT.length - 1;
   }, [frame, startFrame]);
 
-  // Cinematic camera - STAY ZOOMED IN, follow output smoothly
+  // Round helper to avoid blurry text from fractional transforms
+  const round = (n: number) => Math.round(n * 1000) / 1000;
+  const PERSPECTIVE = "perspective(1000px)";
+
+  // Cinematic camera - STAY ZOOMED IN, follow output smoothly (NO breathing)
   const camera = useMemo(() => {
     const totalLines = BOT_OUTPUT.length;
     const lineProgress = currentOutputLine / Math.max(1, totalLines - 1);
@@ -40,22 +45,19 @@ export const RunningApp: React.FC = () => {
     const baseScale = 1.4;     // Start zoomed
     const minScale = 1.25;     // Stay zoomed even at end
     const scaleProgress = easeInOutCubic(Math.min(1, lineProgress));
-    const scale = baseScale - (baseScale - minScale) * scaleProgress;
+    const scale = round(baseScale - (baseScale - minScale) * scaleProgress);
 
     // Follow the content vertically - smooth scrolling
     const lineHeight = 21;
     const currentY = currentOutputLine * lineHeight;
     // Keep current line in upper portion of screen
-    const targetY = Math.max(-300, -currentY * 0.6);
-
-    // Very subtle motion
-    const breathX = Math.sin(frame * 0.005) * 1.5;
-    const breathY = Math.cos(frame * 0.004) * 1;
+    const targetY = round(Math.max(-300, -currentY * 0.6));
 
     return {
       scale,
-      x: breathX,
-      y: targetY + breathY,
+      x: 0,
+      y: targetY,
+      transform: `${PERSPECTIVE} scale(${scale}) translate(0px, ${targetY}px)`,
     };
   }, [frame, currentOutputLine]);
 
@@ -78,15 +80,8 @@ export const RunningApp: React.FC = () => {
         opacity: fadeIn * fadeOut,
       }}
     >
-      {/* Background gradient */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: GRADIENTS.mesh,
-          opacity: 0.5,
-        }}
-      />
+      {/* Professional background */}
+      <Background opacity={1} />
 
       {/* Subtle lighting */}
       <Spotlight x={50} y={40} size={500} intensity={0.06} color="rgba(88,166,255,0.08)" />
@@ -100,9 +95,9 @@ export const RunningApp: React.FC = () => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          transform: `scale(${camera.scale}) translate(${camera.x}px, ${camera.y}px)`,
+          transform: camera.transform,
           transformOrigin: "center 30%",
-          transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)", // Smooth!
+          willChange: "transform",
         }}
       >
         <MacBook scale={0.9} animate={false} showReflection={false}>

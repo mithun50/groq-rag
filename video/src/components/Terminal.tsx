@@ -22,6 +22,10 @@ export const Terminal: React.FC<TerminalProps> = ({
         fontSize: 14,
         display: "flex",
         flexDirection: "column",
+        // Crisp text rendering
+        WebkitFontSmoothing: "antialiased",
+        MozOsxFontSmoothing: "grayscale",
+        textRendering: "optimizeLegibility",
       }}
     >
       {/* Title Bar - minimal macOS style */}
@@ -70,7 +74,7 @@ export const Terminal: React.FC<TerminalProps> = ({
           style={{
             flex: 1,
             textAlign: "center",
-            color: COLORS.gray[500],
+            color: COLORS.white,
             fontSize: 12,
             fontWeight: 500,
           }}
@@ -103,8 +107,8 @@ export const TerminalPrompt: React.FC<TerminalPromptProps> = ({
   path = "~/project"
 }) => {
   return (
-    <span style={{ color: COLORS.terminal.textDim }}>
-      <span style={{ color: COLORS.gray[500] }}>$</span>{" "}
+    <span style={{ color: COLORS.white }}>
+      <span style={{ color: COLORS.terminal.prompt }}>$</span>{" "}
     </span>
   );
 };
@@ -198,11 +202,11 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ progress }) => {
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "monospace" }}>
-      <span style={{ color: COLORS.gray[600] }}>[</span>
-      <span style={{ color: COLORS.gray[400] }}>{"#".repeat(filled)}</span>
-      <span style={{ color: COLORS.gray[700] }}>{"-".repeat(empty)}</span>
-      <span style={{ color: COLORS.gray[600] }}>]</span>
-      <span style={{ color: COLORS.gray[500] }}>{Math.floor(progress)}%</span>
+      <span style={{ color: COLORS.white }}>[</span>
+      <span style={{ color: COLORS.terminal.success }}>{"#".repeat(filled)}</span>
+      <span style={{ color: COLORS.white, opacity: 0.3 }}>{"-".repeat(empty)}</span>
+      <span style={{ color: COLORS.white }}>]</span>
+      <span style={{ color: COLORS.white }}>{Math.floor(progress)}%</span>
     </div>
   );
 };

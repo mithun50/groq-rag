@@ -91,20 +91,20 @@ export const FILE_TREE = [
   { name: ".env", type: "file" as const, level: 1 },
 ];
 
-// Clean syntax highlighting - "Aurora" theme
+// HIGH CONTRAST syntax highlighting - all text visible
 const SYNTAX_COLORS = {
-  keyword: '#ff7b72',      // Coral - import, const, await, new
-  string: '#a5d6ff',       // Light blue - strings
-  function: '#d2a8ff',     // Purple - function names
-  comment: '#c9d1d9',      // Light gray/white - comments (VISIBLE)
-  type: '#ffa657',         // Orange - types, classes
-  variable: '#e6edf3',     // White - variables
-  number: '#79c0ff',       // Cyan - numbers
-  operator: '#ff7b72',     // Coral - operators
-  property: '#7ee787',     // Green - properties
-  punctuation: '#b1bac4',  // Light gray - punctuation, brackets
-  bracket: '#b1bac4',      // Light gray - brackets
-  boolean: '#79c0ff',      // Cyan - true/false
+  keyword: '#ff6b6b',      // Bright red - import, const, await, new
+  string: '#98ec65',       // Bright green - strings
+  function: '#da8fff',     // Bright purple - function names
+  comment: '#ffffff',      // WHITE - comments (FULLY VISIBLE!)
+  type: '#ffb84d',         // Bright orange - types, classes
+  variable: '#ffffff',     // White - variables
+  number: '#64d2ff',       // Bright cyan - numbers
+  operator: '#ff6b6b',     // Bright red - operators
+  property: '#98ec65',     // Bright green - properties
+  punctuation: '#ffffff',  // White - punctuation, brackets
+  bracket: '#ffffff',      // White - brackets
+  boolean: '#64d2ff',      // Bright cyan - true/false
 };
 
 export const highlightCode = (text: string): { text: string; color: string }[] => {

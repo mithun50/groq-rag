@@ -2,6 +2,12 @@ import { useMemo } from "react";
 import { spring, interpolate, SpringConfig, Easing } from "remotion";
 import { SPRING_CONFIGS, easeInOutCubic, easeOutExpo } from "../utils/animations";
 
+// Round to 3 decimal places to avoid blurry text from fractional transforms
+const round = (n: number) => Math.round(n * 1000) / 1000;
+
+// Perspective prevents text shaking/subpixel snapping during animations
+const PERSPECTIVE = "perspective(1000px)";
+
 interface ZoomOptions {
   frame: number;
   fps: number;
@@ -45,15 +51,15 @@ export const useZoom = ({
       durationInFrames,
     });
 
-    const scale = interpolate(progress, [0, 1], [from, to]);
-    const translateY = interpolate(progress, [0, 1], [0, -50]);
+    const scale = round(interpolate(progress, [0, 1], [from, to]));
+    const translateY = round(interpolate(progress, [0, 1], [0, -50]));
     const translateX = 0;
 
     return {
       scale,
       translateX,
       translateY,
-      transform: `scale(${scale}) translateY(${translateY}px)`,
+      transform: `${PERSPECTIVE} scale(${scale}) translateY(${translateY}px)`,
     };
   }, [frame, fps, startFrame, durationInFrames, from, to, config]);
 };
@@ -102,15 +108,15 @@ export const usePanZoom = ({
       durationInFrames,
     });
 
-    const scale = interpolate(progress, [0, 1], [fromScale, toScale]);
-    const translateX = interpolate(progress, [0, 1], [fromX, toX]);
-    const translateY = interpolate(progress, [0, 1], [fromY, toY]);
+    const scale = round(interpolate(progress, [0, 1], [fromScale, toScale]));
+    const translateX = round(interpolate(progress, [0, 1], [fromX, toX]));
+    const translateY = round(interpolate(progress, [0, 1], [fromY, toY]));
 
     return {
       scale,
       translateX,
       translateY,
-      transform: `scale(${scale}) translate(${translateX}px, ${translateY}px)`,
+      transform: `${PERSPECTIVE} scale(${scale}) translate(${translateX}px, ${translateY}px)`,
     };
   }, [
     frame,
@@ -185,10 +191,10 @@ export const useCinematicCamera = ({
     const floatY = Math.cos(frame * 0.008) * 3;
 
     return {
-      scale: targetScale,
-      translateX: charOffsetX + floatX,
-      translateY: targetY + floatY,
-      transform: `scale(${targetScale}) translate(${charOffsetX + floatX}px, ${targetY + floatY}px)`,
+      scale: round(targetScale),
+      translateX: round(charOffsetX),
+      translateY: round(targetY),
+      transform: `${PERSPECTIVE} scale(${round(targetScale)}) translate(${round(charOffsetX)}px, ${round(targetY)}px)`,
       transformOrigin: "center top",
     };
   }, [frame, currentLine, totalLines, currentChar, lineLength, baseScale, maxScale, screenHeight, lineHeight, startY]);
@@ -243,32 +249,26 @@ export const useTypingFollowCamera = ({
     // Phase 1: Before typing - slowly zoom in from center
     if (frame < typingStartFrame) {
       const progress = easeOutExpo(Math.min(1, frame / zoomInDuration));
-      const scale = 1 + (zoomedInScale - 1) * progress;
+      const scale = round(1 + (zoomedInScale - 1) * progress);
+      const ty = round(-15 * progress);
       return {
         scale,
         translateX: 0,
-        translateY: -15 * progress,
-        transform: `scale(${scale}) translateY(${-15 * progress}px)`,
+        translateY: ty,
+        transform: `${PERSPECTIVE} scale(${scale}) translateY(${ty}px)`,
         transformOrigin: "50% 40%",
         phase: "intro",
       };
     }
 
-    // Phase 2: While typing - zoomed in, SMOOTH follow the cursor
+    // Phase 2: While typing - zoomed in, follow the cursor (NO micro-movements)
     if (!typingComplete) {
       const scale = zoomedInScale;
 
-      // SMOOTH LINE TRANSITION - use easing for Y position
       // Calculate target Y based on current line
       const targetLineY = editorPaddingTop + currentLine * lineHeight;
       const screenCenterY = 540;
-      const rawTargetY = -(targetLineY * (scale - 1)) + (screenCenterY * 0.2);
-
-      // Apply smooth easing to Y movement (simulates CSS transition)
-      // Use sine-based smoothing for organic line-to-line movement
-      const smoothFactor = 0.08; // Lower = smoother/slower transition
-      const frameBasedSmooth = Math.sin(frame * smoothFactor) * 0.5 + 0.5;
-      const targetY = rawTargetY;
+      const targetY = round(-(targetLineY * (scale - 1)) + (screenCenterY * 0.2));
 
       // Calculate X position - center the typing area
       const charWidth = 8.5;
@@ -276,23 +276,16 @@ export const useTypingFollowCamera = ({
       const currentCharX = editorLeftMargin + currentChar * charWidth;
       const screenCenterX = 960;
 
-      // Smooth X movement - don't jump
-      const rawTargetX = Math.max(-100, Math.min(80, -(currentCharX - screenCenterX) * 0.25));
-      const targetX = rawTargetX;
-
-      // Very subtle organic motion
-      const microX = Math.sin(frame * 0.01) * 1;
-      const microY = Math.cos(frame * 0.008) * 0.8;
+      // X movement - minimal, no micro-motion
+      const targetX = round(Math.max(-100, Math.min(80, -(currentCharX - screenCenterX) * 0.25)));
 
       return {
-        scale,
-        translateX: targetX + microX,
-        translateY: targetY + microY,
-        transform: `scale(${scale}) translate(${targetX + microX}px, ${targetY + microY}px)`,
+        scale: round(scale),
+        translateX: targetX,
+        translateY: targetY,
+        transform: `${PERSPECTIVE} scale(${round(scale)}) translate(${targetX}px, ${targetY}px)`,
         transformOrigin: "50% 40%",
         phase: "typing",
-        // CSS transition hint for smooth movement
-        transition: "transform 0.3s ease-out",
       };
     }
 
@@ -306,34 +299,31 @@ export const useTypingFollowCamera = ({
       );
 
       const fromScale = zoomedInScale;
-      const toScale = zoomedOutScale; // This should stay large (1.4)
-      const scale = fromScale + (toScale - fromScale) * progress;
+      const toScale = zoomedOutScale;
+      const scale = round(fromScale + (toScale - fromScale) * progress);
 
       // Move to show code nicely centered
       const finalLineY = editorPaddingTop + Math.floor(totalLines * 0.4) * lineHeight;
       const fromY = -(finalLineY * (fromScale - 1)) + (540 * 0.2);
       const toY = -20;
-      const translateY = fromY + (toY - fromY) * progress;
+      const translateY = round(fromY + (toY - fromY) * progress);
 
       return {
         scale,
         translateX: 0,
         translateY,
-        transform: `scale(${scale}) translate(0px, ${translateY}px)`,
+        transform: `${PERSPECTIVE} scale(${scale}) translate(0px, ${translateY}px)`,
         transformOrigin: "50% 40%",
         phase: "zoomOut",
       };
     }
 
-    // Phase 4: After zoom out - stay at READABLE zoom with gentle breathing
-    const breatheX = Math.sin(frame * 0.005) * 1.5;
-    const breatheY = Math.cos(frame * 0.004) * 1;
-
+    // Phase 4: After zoom out - stay at READABLE zoom (NO breathing motion)
     return {
-      scale: zoomedOutScale, // Stays at 1.4 - readable!
-      translateX: breatheX,
-      translateY: -20 + breatheY,
-      transform: `scale(${zoomedOutScale}) translate(${breatheX}px, ${-20 + breatheY}px)`,
+      scale: round(zoomedOutScale),
+      translateX: 0,
+      translateY: -20,
+      transform: `${PERSPECTIVE} scale(${round(zoomedOutScale)}) translate(0px, -20px)`,
       transformOrigin: "50% 40%",
       phase: "complete",
     };
@@ -380,10 +370,10 @@ export const useKeyframeCamera = ({ frame, keyframes }: KeyframeCameraOptions) =
     if (keyframes.length === 1 || frame <= keyframes[0].frame) {
       const kf = keyframes[0];
       return {
-        scale: kf.scale,
-        translateX: kf.x,
-        translateY: kf.y,
-        transform: `scale(${kf.scale}) translate(${kf.x}px, ${kf.y}px)`,
+        scale: round(kf.scale),
+        translateX: round(kf.x),
+        translateY: round(kf.y),
+        transform: `${PERSPECTIVE} scale(${round(kf.scale)}) translate(${round(kf.x)}px, ${round(kf.y)}px)`,
       };
     }
 
@@ -401,10 +391,10 @@ export const useKeyframeCamera = ({ frame, keyframes }: KeyframeCameraOptions) =
 
     if (frame >= endKf.frame) {
       return {
-        scale: endKf.scale,
-        translateX: endKf.x,
-        translateY: endKf.y,
-        transform: `scale(${endKf.scale}) translate(${endKf.x}px, ${endKf.y}px)`,
+        scale: round(endKf.scale),
+        translateX: round(endKf.x),
+        translateY: round(endKf.y),
+        transform: `${PERSPECTIVE} scale(${round(endKf.scale)}) translate(${round(endKf.x)}px, ${round(endKf.y)}px)`,
       };
     }
 
@@ -412,15 +402,15 @@ export const useKeyframeCamera = ({ frame, keyframes }: KeyframeCameraOptions) =
     const t = (frame - startKf.frame) / (endKf.frame - startKf.frame);
     const eased = easeInOutCubic(t);
 
-    const scale = startKf.scale + (endKf.scale - startKf.scale) * eased;
-    const x = startKf.x + (endKf.x - startKf.x) * eased;
-    const y = startKf.y + (endKf.y - startKf.y) * eased;
+    const scale = round(startKf.scale + (endKf.scale - startKf.scale) * eased);
+    const x = round(startKf.x + (endKf.x - startKf.x) * eased);
+    const y = round(startKf.y + (endKf.y - startKf.y) * eased);
 
     return {
       scale,
       translateX: x,
       translateY: y,
-      transform: `scale(${scale}) translate(${x}px, ${y}px)`,
+      transform: `${PERSPECTIVE} scale(${scale}) translate(${x}px, ${y}px)`,
     };
   }, [frame, keyframes]);
 };

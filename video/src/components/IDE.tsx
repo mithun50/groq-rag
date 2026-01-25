@@ -24,6 +24,10 @@ export const IDE: React.FC<IDEProps> = ({
         display: "flex",
         flexDirection: "column",
         fontFamily: "'SF Mono', 'JetBrains Mono', 'Fira Code', monospace",
+        // Crisp text rendering
+        WebkitFontSmoothing: "antialiased",
+        MozOsxFontSmoothing: "grayscale",
+        textRendering: "optimizeLegibility",
       }}
     >
       {/* Title Bar */}
@@ -72,7 +76,7 @@ export const IDE: React.FC<IDEProps> = ({
           style={{
             flex: 1,
             textAlign: "center",
-            color: COLORS.gray[500],
+            color: COLORS.white,
             fontSize: 12,
             fontWeight: 500,
           }}
@@ -97,7 +101,7 @@ export const IDE: React.FC<IDEProps> = ({
             <div
               style={{
                 padding: "6px 12px",
-                color: COLORS.gray[500],
+                color: COLORS.white,
                 fontSize: 10,
                 fontWeight: 600,
                 textTransform: "uppercase",
@@ -148,7 +152,7 @@ export const IDE: React.FC<IDEProps> = ({
           alignItems: "center",
           padding: "0 10px",
           fontSize: 11,
-          color: COLORS.gray[500],
+          color: COLORS.white,
           justifyContent: "space-between",
           borderTop: `1px solid ${COLORS.gray[800]}`,
         }}
@@ -178,7 +182,7 @@ const Tab: React.FC<TabProps> = ({ name, active = false }) => {
       style={{
         padding: "6px 14px",
         backgroundColor: active ? COLORS.ide.bg : "transparent",
-        color: active ? COLORS.gray[300] : COLORS.gray[600],
+        color: COLORS.white,
         display: "flex",
         alignItems: "center",
         gap: 6,
@@ -236,8 +240,8 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({
   const getIcon = () => {
     if (type === "folder") {
       return (
-        <svg width="14" height="14" viewBox="0 0 16 16" fill={COLORS.gray[500]}>
-          <path d="M1.5 3.5h4l1 1h6v7h-11v-8z" fillOpacity="0.8" />
+        <svg width="14" height="14" viewBox="0 0 16 16" fill={COLORS.primary}>
+          <path d="M1.5 3.5h4l1 1h6v7h-11v-8z" fillOpacity="0.9" />
         </svg>
       );
     }
@@ -248,14 +252,14 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({
 
     if (name.endsWith(".json")) {
       return (
-        <svg width="14" height="14" viewBox="0 0 16 16" fill={COLORS.gray[500]}>
-          <rect x="2" y="2" width="12" height="12" rx="2" fillOpacity="0.8" />
+        <svg width="14" height="14" viewBox="0 0 16 16" fill={COLORS.terminal.warning}>
+          <rect x="2" y="2" width="12" height="12" rx="2" fillOpacity="0.9" />
         </svg>
       );
     }
 
     return (
-      <svg width="14" height="14" viewBox="0 0 16 16" fill={COLORS.gray[600]}>
+      <svg width="14" height="14" viewBox="0 0 16 16" fill={COLORS.white}>
         <path d="M3 2h7l3 3v9H3V2z" fillOpacity="0.8" />
       </svg>
     );
@@ -270,7 +274,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({
         alignItems: "center",
         gap: 5,
         backgroundColor: active ? COLORS.ide.sidebarActive : "transparent",
-        color: active ? COLORS.gray[300] : COLORS.gray[500],
+        color: active ? COLORS.white : COLORS.gray[300],
         fontSize: 12,
         borderRadius: 3,
       }}

@@ -72,6 +72,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         padding: "16px 0",
         overflow: "hidden",
         display: "flex",
+        // Crisp text rendering
+        WebkitFontSmoothing: "antialiased",
+        MozOsxFontSmoothing: "grayscale",
+        textRendering: "optimizeLegibility",
       }}
     >
       {/* Line Numbers */}
@@ -174,8 +178,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               marginBottom: 1,
               backgroundColor:
                 index < visibleLines.length
-                  ? COLORS.gray[500]
-                  : COLORS.gray[800],
+                  ? COLORS.white
+                  : COLORS.gray[700],
               width: `${Math.min(100, line.text.length * 2)}%`,
             }}
           />

@@ -1,6 +1,7 @@
 import React from "react";
 import { useCurrentFrame, spring, interpolate, AbsoluteFill } from "remotion";
 import { Particles, Spotlight, Vignette, FilmGrain } from "../components/Particles";
+import { Background } from "../components/Background";
 import { COLORS, GRADIENTS } from "../utils/colors";
 import { SPRING_CONFIGS, FPS, DURATIONS } from "../utils/animations";
 
@@ -26,15 +27,8 @@ export const Intro: React.FC = () => {
         opacity: fadeOut,
       }}
     >
-      {/* macOS mesh gradient background */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: GRADIENTS.mesh,
-          opacity: 0.7,
-        }}
-      />
+      {/* Professional background with accent glows */}
+      <Background opacity={1} />
 
       {/* Subtle background effects */}
       <Particles count={20} speed={0.15} minSize={1} maxSize={2} />
@@ -172,7 +166,7 @@ const TaglineMinimal: React.FC<TaglineMinimalProps> = ({ frame }) => {
       <div
         style={{
           fontSize: 22,
-          color: COLORS.gray[400],
+          color: COLORS.white,
           fontFamily: "'SF Pro Display', 'Inter', system-ui, sans-serif",
           fontWeight: 400,
           letterSpacing: "0.02em",
@@ -228,7 +222,7 @@ const Badge: React.FC<BadgeProps> = ({ text }) => {
         backgroundColor: "rgba(88,166,255,0.08)",
         border: `1px solid rgba(88,166,255,0.15)`,
         borderRadius: 6,
-        color: COLORS.gray[200],
+        color: COLORS.white,
         fontSize: 12,
         fontWeight: 500,
         fontFamily: "'SF Mono', 'JetBrains Mono', monospace",

@@ -4,6 +4,7 @@ import { MacBook } from "../components/MacBook";
 import { IDE } from "../components/IDE";
 import { CodeEditor } from "../components/CodeEditor";
 import { Vignette, Spotlight, FilmGrain } from "../components/Particles";
+import { Background } from "../components/Background";
 import { COLORS, GRADIENTS } from "../utils/colors";
 import { DURATIONS, FPS } from "../utils/animations";
 import { CHATBOT_CODE } from "../utils/code-samples";
@@ -98,15 +99,8 @@ export const IDECodeWriting: React.FC = () => {
         opacity: fadeIn * fadeOut,
       }}
     >
-      {/* macOS-style mesh gradient background */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: GRADIENTS.mesh,
-          opacity: 0.6,
-        }}
-      />
+      {/* Professional background */}
+      <Background opacity={1} />
 
       {/* Subtle accent lighting */}
       <Spotlight x={30} y={15} size={600} intensity={0.06} color="rgba(88,166,255,0.08)" />
@@ -123,7 +117,6 @@ export const IDECodeWriting: React.FC = () => {
           transform: camera.transform,
           transformOrigin: camera.transformOrigin,
           willChange: "transform",
-          transition: "transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)", // Smooth line transitions
         }}
       >
         <MacBook scale={0.9} animate={false} showReflection={false}>
@@ -236,7 +229,7 @@ const TypingIndicator: React.FC<TypingIndicatorProps> = ({
         />
         <span
           style={{
-            color: COLORS.gray[400],
+            color: COLORS.white,
             fontSize: 12,
             fontFamily: "'SF Mono', 'JetBrains Mono', monospace",
             fontWeight: 500,

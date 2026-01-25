@@ -1,6 +1,7 @@
 import React from "react";
 import { useCurrentFrame, interpolate, spring, AbsoluteFill } from "remotion";
 import { Spotlight, Vignette, FilmGrain, Particles } from "../components/Particles";
+import { Background } from "../components/Background";
 import { COLORS } from "../utils/colors";
 import { SPRING_CONFIGS, FPS, DURATIONS } from "../utils/animations";
 
@@ -30,7 +31,8 @@ export const FeaturesShowcase: React.FC = () => {
         opacity: fadeIn * fadeOut,
       }}
     >
-      {/* Background */}
+      {/* Professional background */}
+      <Background opacity={1} />
       <Particles count={20} speed={0.15} />
       <Spotlight x={50} y={50} size={600} intensity={0.05} />
 
@@ -92,7 +94,7 @@ const SectionTitle: React.FC<SectionTitleProps> = ({ frame }) => {
       <p
         style={{
           fontSize: 16,
-          color: COLORS.gray[500],
+          color: COLORS.white,
           fontFamily: "'SF Pro Display', 'Inter', system-ui, sans-serif",
         }}
       >
@@ -219,7 +221,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
       <p
         style={{
           fontSize: 13,
-          color: COLORS.gray[500],
+          color: COLORS.white,
           fontFamily: "'SF Pro Display', 'Inter', system-ui, sans-serif",
         }}
       >
