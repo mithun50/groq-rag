@@ -3,37 +3,57 @@
 [![npm version](https://badge.fury.io/js/groq-rag.svg)](https://www.npmjs.com/package/groq-rag)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
 
-Extended Groq SDK with RAG (Retrieval-Augmented Generation), web browsing, and agent capabilities. Build AI agents that can search the web, fetch URLs, query knowledge bases, and more.
+Extended Groq SDK with RAG (Retrieval-Augmented Generation), web browsing, and autonomous agent capabilities. Build intelligent AI applications that can search the web, fetch URLs, query knowledge bases, and reason through complex tasks.
+
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Supported Models](#supported-models)
+- [Core Modules](#core-modules)
+  - [GroqRAG Client](#groqrag-client)
+  - [RAG Module](#rag-module)
+  - [Web Module](#web-module)
+  - [Chat Module](#chat-module)
+  - [Agent System](#agent-system)
+  - [Tool System](#tool-system)
+- [Configuration](#configuration)
+  - [Vector Stores](#vector-stores)
+  - [Embedding Providers](#embedding-providers)
+  - [Search Providers](#search-providers)
+  - [Chunking Strategies](#chunking-strategies)
+- [Utilities](#utilities)
+- [Examples](#examples)
+- [Architecture](#architecture)
+- [Development](#development)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Features
 
-- **RAG Support**: Built-in vector store and document retrieval with chunking strategies
-- **Web Fetching**: Fetch and parse web pages to clean markdown
-- **Web Search**: DuckDuckGo (free), Brave Search, and Serper (Google) integration
-- **Tool System**: Extensible tool framework with built-in tools
-- **Agents**: ReAct-style agents with tool use, memory, and streaming
-- **TypeScript**: Full type safety and IntelliSense support
-- **Zero Config**: Works out of the box with sensible defaults
-
-## Supported Models
-
-This package works with all Groq-supported models. Recommended models:
-
-| Model | Description | Best For |
-|-------|-------------|----------|
-| `llama-3.3-70b-versatile` | Latest Llama 3.3 70B | General purpose, best quality |
-| `llama-3.1-8b-instant` | Fast Llama 3.1 8B | Quick responses, lower cost |
-| `qwen/qwen3-32b` | Qwen 3 32B | Alternative, good reasoning |
-| `meta-llama/llama-4-scout-17b-16e-instruct` | Llama 4 Scout | Vision tasks, newest |
-
-See [Groq Models](https://console.groq.com/docs/models) for the full list.
+| Feature | Description |
+|---------|-------------|
+| **RAG Support** | Built-in vector store with document chunking, embedding, and semantic retrieval |
+| **Web Fetching** | Fetch and parse web pages to clean markdown with metadata extraction |
+| **Web Search** | DuckDuckGo (free), Brave Search, and Serper (Google) integration |
+| **Agent System** | ReAct-style autonomous agents with tool use, memory, and streaming |
+| **Tool Framework** | Extensible tool system with built-in and custom tools |
+| **TypeScript** | Full type safety with comprehensive IntelliSense support |
+| **Zero Config** | Works out of the box with sensible defaults |
+| **Streaming** | Real-time streaming for both chat and agent execution |
 
 ## Installation
 
 ```bash
 npm install groq-rag
 ```
+
+**Requirements:**
+- Node.js 18.0.0 or higher
+- Groq API key (get one at [console.groq.com](https://console.groq.com))
 
 ## Quick Start
 
@@ -48,9 +68,7 @@ const client = new GroqRAG({
 
 const response = await client.complete({
   model: 'llama-3.3-70b-versatile',
-  messages: [
-    { role: 'user', content: 'Hello!' },
-  ],
+  messages: [{ role: 'user', content: 'Hello!' }],
 });
 
 console.log(response.choices[0].message.content);
@@ -59,116 +77,106 @@ console.log(response.choices[0].message.content);
 ### RAG-Augmented Chat
 
 ```typescript
-import GroqRAG from 'groq-rag';
-
 const client = new GroqRAG();
 
-// Initialize RAG (uses in-memory vector store by default)
+// Initialize RAG with in-memory vector store
 await client.initRAG();
 
 // Add documents to the knowledge base
 await client.rag.addDocument('Your document content here...');
 await client.rag.addDocument('Another document...', { source: 'manual.pdf' });
 
-// Chat with context retrieval
+// Chat with automatic context retrieval
 const response = await client.chat.withRAG({
   messages: [{ role: 'user', content: 'What does the document say about X?' }],
-  topK: 5,        // Number of chunks to retrieve
-  minScore: 0.5,  // Minimum similarity score
+  topK: 5,
+  minScore: 0.5,
 });
 
 console.log(response.content);
 console.log('Sources:', response.sources);
 ```
 
-### Web Search Chat
+### Autonomous Agent
 
 ```typescript
-const response = await client.chat.withWebSearch({
-  messages: [{ role: 'user', content: 'Latest AI news?' }],
-  maxResults: 5,
-});
-
-console.log(response.content);
-console.log('Sources:', response.sources);
-```
-
-### URL Fetching
-
-```typescript
-// Fetch and parse a URL
-const result = await client.web.fetch('https://example.com');
-console.log(result.title);
-console.log(result.markdown);
-
-// Chat about a URL's content
-const response = await client.chat.withUrl({
-  messages: [{ role: 'user', content: 'Summarize this page' }],
-  url: 'https://example.com/article',
-});
-```
-
-### Agents with Tools
-
-```typescript
-// Create agent with built-in tools
 const agent = await client.createAgentWithBuiltins({
   model: 'llama-3.3-70b-versatile',
   verbose: true,
 });
 
 const result = await agent.run('Search for recent AI news and summarize the top 3 stories');
+
 console.log(result.output);
 console.log('Tools used:', result.toolCalls.map(t => t.name));
 ```
 
-### Streaming Agent
+## Supported Models
 
-```typescript
-const agent = await client.createAgentWithBuiltins();
+This package works with all Groq-supported models:
 
-for await (const event of agent.runStream('Research topic X')) {
-  switch (event.type) {
-    case 'content':
-      process.stdout.write(event.data as string);
-      break;
-    case 'tool_call':
-      console.log('\n[Calling tool...]');
-      break;
-    case 'tool_result':
-      console.log('[Tool completed]');
-      break;
-  }
-}
-```
+| Model | Parameters | Best For |
+|-------|------------|----------|
+| `llama-3.3-70b-versatile` | 70B | General purpose, highest quality |
+| `llama-3.1-8b-instant` | 8B | Fast responses, cost-effective |
+| `qwen/qwen3-32b` | 32B | Strong reasoning, alternative to Llama |
+| `meta-llama/llama-4-scout-17b-16e-instruct` | 17B | Vision tasks, newest architecture |
 
-## API Reference
+See [Groq Models](https://console.groq.com/docs/models) for the complete list.
+
+## Core Modules
 
 ### GroqRAG Client
 
+The main entry point providing unified access to all functionality.
+
 ```typescript
+import GroqRAG from 'groq-rag';
+
 const client = new GroqRAG({
-  apiKey?: string,      // Groq API key (defaults to GROQ_API_KEY env var)
-  baseURL?: string,     // Custom API base URL
-  timeout?: number,     // Request timeout in milliseconds
-  maxRetries?: number,  // Max retry attempts (default: 2)
+  apiKey: string,        // Groq API key (defaults to GROQ_API_KEY env var)
+  baseURL?: string,      // Custom API base URL
+  timeout?: number,      // Request timeout in milliseconds
+  maxRetries?: number,   // Max retry attempts (default: 2)
 });
 ```
 
+**Methods:**
+
+| Method | Description |
+|--------|-------------|
+| `initRAG(options)` | Initialize RAG with vector store and embeddings |
+| `complete(params)` | Standard chat completion (passthrough to Groq) |
+| `stream(params)` | Streaming chat completion |
+| `createAgent(config)` | Create a basic agent |
+| `createAgentWithBuiltins(config)` | Create agent with all built-in tools |
+| `getRetriever()` | Get the RAG retriever instance |
+
+**Sub-modules:**
+- `client.chat` - Enhanced chat methods (withRAG, withWebSearch, withUrl)
+- `client.web` - Web operations (fetch, search, fetchMany)
+- `client.rag` - Knowledge base management (addDocument, query, getContext)
+
+---
+
 ### RAG Module
 
+Manage your knowledge base with document ingestion, chunking, and semantic retrieval.
+
+#### Initialization
+
 ```typescript
-// Initialize with custom configuration
 await client.initRAG({
   embedding: {
     provider: 'groq' | 'openai',
-    apiKey: 'optional-key',
-    model: 'text-embedding-3-small',
+    apiKey?: string,
+    model?: string,
+    dimensions?: number,
   },
   vectorStore: {
     provider: 'memory' | 'chroma',
-    connectionString: 'http://localhost:8000',
-    indexName: 'my-collection',
+    connectionString?: string,
+    indexName?: string,
   },
   chunking: {
     strategy: 'recursive' | 'fixed' | 'sentence' | 'paragraph',
@@ -176,111 +184,241 @@ await client.initRAG({
     chunkOverlap: 200,
   },
 });
-
-// Document operations
-await client.rag.addDocument(content, metadata?);
-await client.rag.addDocuments([{ content, metadata }]);
-await client.rag.addUrl('https://example.com');
-
-// Querying
-const results = await client.rag.query('search query', { topK: 5, minScore: 0.5 });
-const context = await client.rag.getContext('query', { includeMetadata: true });
-
-// Management
-await client.rag.clear();
-const count = await client.rag.count();
 ```
+
+#### Document Operations
+
+```typescript
+// Add single document
+await client.rag.addDocument(content: string, metadata?: Record<string, unknown>);
+
+// Add multiple documents
+await client.rag.addDocuments([
+  { content: 'Document 1...', metadata: { source: 'file1.txt' } },
+  { content: 'Document 2...', metadata: { source: 'file2.txt' } },
+]);
+
+// Add URL content directly
+await client.rag.addUrl('https://example.com');
+```
+
+#### Querying
+
+```typescript
+// Semantic search
+const results = await client.rag.query('search query', {
+  topK: 5,
+  minScore: 0.5,
+});
+
+// Get formatted context for LLM
+const context = await client.rag.getContext('query', {
+  includeMetadata: true,
+  maxTokens: 4000,
+});
+```
+
+#### Management
+
+```typescript
+await client.rag.clear();        // Clear all documents
+const count = await client.rag.count();  // Get document count
+```
+
+---
 
 ### Web Module
 
+Fetch, parse, and search the web.
+
+#### Fetching URLs
+
 ```typescript
-// Fetch URLs
+// Fetch single URL
 const result = await client.web.fetch(url, {
-  headers: {},
-  timeout: 30000,
-  includeLinks: true,
-  includeImages: false,
+  headers?: Record<string, string>,
+  timeout?: number,        // Default: 30000ms
+  maxLength?: number,      // Max content length
+  includeLinks?: boolean,  // Extract links
+  includeImages?: boolean, // Extract images
 });
 
-const results = await client.web.fetchMany(urls);
+// Returns:
+// {
+//   url: string,
+//   title?: string,
+//   content: string,
+//   markdown?: string,
+//   links?: Array<{ text: string, href: string }>,
+//   images?: Array<{ alt: string, src: string }>,
+//   metadata?: { description?, author?, publishedDate? },
+//   fetchedAt: Date,
+// }
+
+// Fetch multiple URLs
+const results = await client.web.fetchMany(['url1', 'url2', 'url3']);
+
+// Get markdown only
 const markdown = await client.web.fetchMarkdown(url);
-
-// Search the web
-const results = await client.web.search('query', {
-  maxResults: 10,
-  safeSearch: true,
-});
 ```
+
+#### Web Search
+
+```typescript
+const results = await client.web.search('query', {
+  maxResults?: number,   // Default: 10
+  safeSearch?: boolean,  // Default: true
+  language?: string,
+  region?: string,
+});
+
+// Returns:
+// Array<{
+//   title: string,
+//   url: string,
+//   snippet: string,
+//   position: number,
+// }>
+```
+
+---
 
 ### Chat Module
 
+Enhanced chat methods with built-in RAG and web integration.
+
+#### RAG-Augmented Chat
+
 ```typescript
-// RAG-augmented chat
-await client.chat.withRAG({
-  messages,
+const response = await client.chat.withRAG({
+  messages: Message[],
   model?: string,
-  topK?: number,
-  minScore?: number,
+  topK?: number,           // Documents to retrieve (default: 5)
+  minScore?: number,       // Minimum similarity (default: 0.5)
   includeMetadata?: boolean,
   systemPrompt?: string,
+  temperature?: number,
+  maxTokens?: number,
 });
 
-// Web search chat
-await client.chat.withWebSearch({
-  messages,
+// Returns:
+// {
+//   content: string,
+//   sources: SearchResult[],
+//   usage?: { promptTokens, completionTokens, totalTokens },
+// }
+```
+
+#### Web Search Chat
+
+```typescript
+const response = await client.chat.withWebSearch({
+  messages: Message[],
   model?: string,
-  searchQuery?: string,
-  maxResults?: number,
+  searchQuery?: string,    // Custom search query
+  maxResults?: number,     // Search results to include
 });
+```
 
-// URL content chat
-await client.chat.withUrl({
-  messages,
+#### URL Content Chat
+
+```typescript
+const response = await client.chat.withUrl({
+  messages: Message[],
   url: string,
   model?: string,
 });
 ```
 
-### Agents
+---
+
+### Agent System
+
+Create autonomous agents that reason and use tools to accomplish tasks.
+
+#### Creating Agents
 
 ```typescript
-// Create basic agent
+// Basic agent with custom tools
 const agent = client.createAgent({
   name?: string,
   model?: string,
   systemPrompt?: string,
   tools?: ToolDefinition[],
-  maxIterations?: number,
-  verbose?: boolean,
+  maxIterations?: number,  // Default: 10
+  verbose?: boolean,       // Log agent reasoning
 });
 
-// Create with built-in tools
-const agent = await client.createAgentWithBuiltins(config);
-
-// Execute
-const result = await agent.run('task description');
-
-// Stream execution
-for await (const event of agent.runStream('task')) {
-  // Handle events: 'content', 'tool_call', 'tool_result', 'done'
-}
-
-// Memory management
-agent.clearHistory();
-const history = agent.getHistory();
+// Agent with all built-in tools
+const agent = await client.createAgentWithBuiltins({
+  model: 'llama-3.3-70b-versatile',
+  verbose: true,
+});
 ```
 
-### Built-in Tools
+#### Running Agents
+
+```typescript
+// Synchronous execution
+const result = await agent.run('Your task description');
+
+// Returns:
+// {
+//   output: string,        // Final answer
+//   steps: AgentStep[],    // Reasoning steps
+//   toolCalls: ToolResult[], // Tools used
+//   totalTokens?: number,
+// }
+```
+
+#### Streaming Execution
+
+```typescript
+for await (const event of agent.runStream('Research topic X')) {
+  switch (event.type) {
+    case 'thought':
+      console.log('Thinking:', event.data);
+      break;
+    case 'content':
+      process.stdout.write(event.data as string);
+      break;
+    case 'tool_call':
+      console.log('Calling tool:', event.data);
+      break;
+    case 'tool_result':
+      console.log('Tool result received');
+      break;
+    case 'done':
+      console.log('Agent finished');
+      break;
+  }
+}
+```
+
+#### Memory Management
+
+```typescript
+agent.clearHistory();              // Reset conversation
+const history = agent.getHistory(); // Get conversation history
+```
+
+---
+
+### Tool System
+
+Define custom tools for agents to use.
+
+#### Built-in Tools
 
 | Tool | Description |
 |------|-------------|
 | `web_search` | Search the web using DuckDuckGo |
 | `fetch_url` | Fetch and parse web pages |
-| `rag_query` | Query the knowledge base |
 | `calculator` | Mathematical calculations |
 | `get_datetime` | Get current date/time |
+| `rag_query` | Query knowledge base (requires RAG initialization) |
 
-### Custom Tools
+#### Custom Tools
 
 ```typescript
 import { ToolDefinition } from 'groq-rag';
@@ -305,11 +443,25 @@ const myTool: ToolDefinition = {
 const agent = client.createAgent({ tools: [myTool] });
 ```
 
+#### Tool Executor
+
+```typescript
+import { ToolExecutor, createToolExecutor } from 'groq-rag';
+
+const executor = createToolExecutor();
+executor.register(myTool);
+executor.register(anotherTool);
+
+const result = await executor.execute('my_tool', { input: 'hello' });
+```
+
 ## Configuration
 
-### Vector Store Providers
+### Vector Stores
 
 #### In-Memory (Default)
+
+Best for development, testing, and small datasets. No persistence.
 
 ```typescript
 await client.initRAG({
@@ -317,9 +469,9 @@ await client.initRAG({
 });
 ```
 
-Best for: Development, testing, small datasets.
-
 #### ChromaDB
+
+Best for production, large datasets, and persistence.
 
 ```typescript
 await client.initRAG({
@@ -331,13 +483,13 @@ await client.initRAG({
 });
 ```
 
-Best for: Production, large datasets, persistence.
+---
 
 ### Embedding Providers
 
-#### Groq (Default)
+#### Groq Embeddings (Default)
 
-Uses a deterministic pseudo-embedding for demos. Suitable for testing.
+Deterministic pseudo-embeddings for testing. No API cost.
 
 ```typescript
 await client.initRAG({
@@ -345,9 +497,9 @@ await client.initRAG({
 });
 ```
 
-#### OpenAI
+#### OpenAI Embeddings
 
-For production use with high-quality embeddings:
+High-quality embeddings for production use.
 
 ```typescript
 await client.initRAG({
@@ -360,9 +512,13 @@ await client.initRAG({
 });
 ```
 
+---
+
 ### Search Providers
 
-#### DuckDuckGo (Default, No API Key)
+#### DuckDuckGo (Default)
+
+Free, no API key required.
 
 ```typescript
 import { createSearchProvider } from 'groq-rag';
@@ -370,6 +526,8 @@ const search = createSearchProvider({ provider: 'duckduckgo' });
 ```
 
 #### Brave Search
+
+High-quality results, requires API key.
 
 ```typescript
 const search = createSearchProvider({
@@ -380,6 +538,8 @@ const search = createSearchProvider({
 
 #### Serper (Google)
 
+Google search via Serper API.
+
 ```typescript
 const search = createSearchProvider({
   provider: 'serper',
@@ -387,14 +547,17 @@ const search = createSearchProvider({
 });
 ```
 
-## Text Chunking Strategies
+---
+
+### Chunking Strategies
 
 | Strategy | Description | Best For |
 |----------|-------------|----------|
-| `recursive` | Splits by separators, falls back to smaller separators | General purpose (default) |
+| `recursive` | Splits by separators with fallback | General purpose (default) |
 | `fixed` | Fixed character size with overlap | Uniform chunk sizes |
 | `sentence` | Splits by sentence boundaries | Preserving sentence context |
-| `paragraph` | Splits by paragraphs | Document structure preservation |
+| `paragraph` | Splits by paragraphs | Document structure |
+| `semantic` | Context-aware boundaries | Preserving meaning |
 
 ```typescript
 await client.initRAG({
@@ -408,54 +571,86 @@ await client.initRAG({
 
 ## Utilities
 
+Standalone utility functions exported for direct use.
+
 ```typescript
 import {
   chunkText,
   cosineSimilarity,
   estimateTokens,
+  truncateToTokens,
   formatContext,
   extractUrls,
+  cleanText,
+  generateId,
+  sleep,
+  retry,
+  batch,
+  safeJsonParse,
 } from 'groq-rag';
 
 // Chunk text manually
-const chunks = chunkText('Long text...', 'doc-id', { chunkSize: 500 });
+const chunks = chunkText('Long text...', 'doc-id', {
+  strategy: 'recursive',
+  chunkSize: 500,
+  chunkOverlap: 100,
+});
 
-// Calculate similarity
+// Calculate vector similarity
 const similarity = cosineSimilarity(embedding1, embedding2);
 
 // Estimate tokens
 const tokenCount = estimateTokens('Some text');
+
+// Truncate to token limit
+const truncated = truncateToTokens('Long text...', 1000);
+
+// Format retrieved docs for LLM
+const context = formatContext(searchResults, { includeMetadata: true });
+
+// Extract URLs from text
+const urls = extractUrls('Check out https://example.com for more');
+
+// Retry with exponential backoff
+const result = await retry(() => fetchData(), { maxRetries: 3 });
+
+// Split array into batches
+const batches = batch(items, 10);  // Returns T[][]
+for (const group of batches) {
+  await processBatch(group);
+}
 ```
 
 ## Examples
 
-See the [examples](./examples) directory for complete usage examples:
+Complete examples in the [examples/](./examples) directory:
 
-- `basic-chat.ts` - Simple chat completion
-- `rag-chat.ts` - RAG-augmented conversation
-- `web-search.ts` - Web search integration
-- `url-fetch.ts` - URL fetching and summarization
-- `agent.ts` - Agent with tools
-- `streaming-agent.ts` - Streaming agent execution
-- `full-chatbot.ts` - **Full-featured interactive chatbot** with all capabilities
+| Example | Description |
+|---------|-------------|
+| `basic-chat.ts` | Simple chat completion |
+| `rag-chat.ts` | RAG-augmented conversation |
+| `web-search.ts` | Web search integration |
+| `url-fetch.ts` | URL fetching and summarization |
+| `agent.ts` | Agent with tools |
+| `streaming-agent.ts` | Streaming agent execution |
+| `full-chatbot.ts` | **Full-featured interactive CLI chatbot** |
 
-### Full Chatbot Example
+### Running the Full Chatbot
 
-The `full-chatbot.ts` example demonstrates all groq-rag features in an interactive CLI:
+The `full-chatbot.ts` example demonstrates all groq-rag capabilities:
 
 ```bash
 GROQ_API_KEY=your_key npx tsx examples/full-chatbot.ts
 ```
 
-Features:
-- **Agent Mode**: Automatically uses web search, URL fetch, calculator, and RAG
-- **RAG Mode**: Uses knowledge base for context-aware responses
-- **Custom Prompts**: Set your own system prompt with `/prompt`
-- **Context Management**: Add context with `/context`
-- **Knowledge Base**: Add URLs (`/add`) or text (`/addtext`)
-- **Web Tools**: Search (`/search`) and fetch (`/fetch`) web content
+**Capabilities:**
+- Agent Mode: Automatically uses web search, URL fetch, calculator, and RAG
+- RAG Mode: Uses knowledge base for context-aware responses
+- Custom system prompts and context management
+- Knowledge base management (add URLs, custom text)
+- Web search and URL fetching
 
-Commands:
+**Commands:**
 ```
 /help        - Show all commands
 /add <url>   - Add URL to knowledge base
@@ -469,9 +664,53 @@ Commands:
 /quit        - Exit
 ```
 
+## Architecture
+
+```
+groq-rag/
+├── src/
+│   ├── index.ts          # Public API exports
+│   ├── client.ts         # GroqRAG client class
+│   ├── types.ts          # TypeScript interfaces
+│   ├── rag/
+│   │   ├── retriever.ts  # Document retrieval orchestrator
+│   │   ├── vectorStore.ts # Vector store implementations
+│   │   └── embeddings.ts # Embedding providers
+│   ├── web/
+│   │   ├── fetcher.ts    # Web page fetching
+│   │   └── search.ts     # Search providers
+│   ├── tools/
+│   │   ├── executor.ts   # Tool execution engine
+│   │   └── builtins.ts   # Built-in tools
+│   ├── agents/
+│   │   └── agent.ts      # ReAct agent implementation
+│   └── utils/
+│       ├── chunker.ts    # Text chunking
+│       └── helpers.ts    # Utility functions
+├── tests/                # Test files
+└── examples/             # Usage examples
+```
+
+**Data Flow:**
+
+```
+Document Ingestion:
+  Document → Chunker → Embeddings → Vector Store
+
+Query Flow:
+  Query → Embedding → Vector Search → Top-K Results → LLM Context
+
+Agent Flow:
+  User Input → Agent Loop → Tool Selection → Tool Execution → Response
+```
+
 ## Development
 
 ```bash
+# Clone repository
+git clone https://github.com/mithun50/groq-rag.git
+cd groq-rag
+
 # Install dependencies
 npm install
 
@@ -480,6 +719,9 @@ npm test
 
 # Run tests in watch mode
 npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
 
 # Build
 npm run build
@@ -493,8 +735,22 @@ npm run typecheck
 
 ## Contributing
 
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details.
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details on:
+
+- Development setup
+- Code style guidelines
+- Testing requirements
+- Pull request process
+- Adding new features (vector stores, search providers, tools)
 
 ## License
 
 MIT - see [LICENSE](LICENSE) for details.
+
+---
+
+**Author:** [mithun50](https://github.com/mithun50)
+
+**Repository:** [github.com/mithun50/groq-rag](https://github.com/mithun50/groq-rag)
+
+**npm:** [npmjs.com/package/groq-rag](https://www.npmjs.com/package/groq-rag)

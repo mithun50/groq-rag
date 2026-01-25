@@ -24,8 +24,6 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
-    "docs": "typedoc",
-    "docs:md": "typedoc --plugin typedoc-plugin-markdown --out docs/api",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -62,8 +60,6 @@
     "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^9.0.0",
     "tsup": "^8.0.1",
-    "typedoc": "^0.28.16",
-    "typedoc-plugin-markdown": "^4.9.0",
     "typescript": "^5.3.3",
     "typescript-eslint": "^8.0.0",
     "vitest": "^1.2.0"
