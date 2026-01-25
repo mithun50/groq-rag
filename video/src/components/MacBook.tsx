@@ -47,7 +47,10 @@ export const MacBook: React.FC<MacBookProps> = ({
         flexDirection: "column",
         alignItems: "center",
         opacity,
-        transform: `translateY(${translateY}px)`,
+        transform: `translateY(${Math.round(translateY)}px)`,
+        backfaceVisibility: "hidden",
+        WebkitBackfaceVisibility: "hidden",
+        transformStyle: "preserve-3d",
       }}
     >
       {/* Screen Assembly */}

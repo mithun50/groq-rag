@@ -62,6 +62,9 @@ export const TerminalInstall: React.FC = () => {
           transform,
           transformOrigin: "center center",
           willChange: "transform",
+          backfaceVisibility: "hidden",
+          WebkitBackfaceVisibility: "hidden",
+          transformStyle: "preserve-3d",
         }}
       >
         <MacBook scale={0.9} animate={false} showReflection={false}>

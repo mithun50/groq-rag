@@ -106,7 +106,7 @@ export const IDECodeWriting: React.FC = () => {
       <Spotlight x={30} y={15} size={600} intensity={0.06} color="rgba(88,166,255,0.08)" />
       <Spotlight x={75} y={85} size={500} intensity={0.04} color="rgba(163,113,247,0.06)" />
 
-      {/* MacBook with IDE - professional follow camera with SMOOTH transitions */}
+      {/* MacBook with IDE - crisp text rendering */}
       <div
         style={{
           position: "absolute",
@@ -117,6 +117,9 @@ export const IDECodeWriting: React.FC = () => {
           transform: camera.transform,
           transformOrigin: camera.transformOrigin,
           willChange: "transform",
+          backfaceVisibility: "hidden",
+          WebkitBackfaceVisibility: "hidden",
+          transformStyle: "preserve-3d",
         }}
       >
         <MacBook scale={0.9} animate={false} showReflection={false}>

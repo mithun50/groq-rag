@@ -2,8 +2,8 @@ import { useMemo } from "react";
 import { spring, interpolate, SpringConfig, Easing } from "remotion";
 import { SPRING_CONFIGS, easeInOutCubic, easeOutExpo } from "../utils/animations";
 
-// Round to 3 decimal places to avoid blurry text from fractional transforms
-const round = (n: number) => Math.round(n * 1000) / 1000;
+// Round to 2 decimal places for crisp text (less subpixel rendering)
+const round = (n: number) => Math.round(n * 100) / 100;
 
 // Perspective prevents text shaking/subpixel snapping during animations
 const PERSPECTIVE = "perspective(1000px)";

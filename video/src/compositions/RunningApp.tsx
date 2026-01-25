@@ -87,7 +87,7 @@ export const RunningApp: React.FC = () => {
       <Spotlight x={50} y={40} size={500} intensity={0.06} color="rgba(88,166,255,0.08)" />
       <Spotlight x={20} y={70} size={400} intensity={0.04} color="rgba(63,185,80,0.05)" />
 
-      {/* MacBook with Terminal - SMOOTH camera transitions */}
+      {/* MacBook with Terminal - crisp text rendering */}
       <div
         style={{
           position: "absolute",
@@ -98,6 +98,9 @@ export const RunningApp: React.FC = () => {
           transform: camera.transform,
           transformOrigin: "center 30%",
           willChange: "transform",
+          backfaceVisibility: "hidden",
+          WebkitBackfaceVisibility: "hidden",
+          transformStyle: "preserve-3d",
         }}
       >
         <MacBook scale={0.9} animate={false} showReflection={false}>
