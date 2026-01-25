@@ -207,11 +207,19 @@ for await (const event of agent.runStream('Explain machine learning')) {
 
 ### Models
 
-| Model | Speed | Quality | Use Case |
-|-------|-------|---------|----------|
-| `llama-3.3-70b-versatile` | Medium | Best | Complex tasks |
-| `llama-3.1-8b-instant` | Fast | Good | Quick responses |
-| `qwen/qwen3-32b` | Medium | Great | Reasoning tasks |
+groq-rag supports **all Groq models**. Here are recommended models by use case:
+
+| Model | Speed | Best For |
+|-------|-------|----------|
+| `llama-3.3-70b-versatile` | 280 T/s | General purpose, highest quality |
+| `llama-3.1-8b-instant` | 560 T/s | Fast responses, cost-effective |
+| `openai/gpt-oss-120b` | 500 T/s | Complex reasoning with tools |
+| `qwen/qwen3-32b` | — | Math & reasoning tasks |
+| `deepseek-r1-distill-qwen-32b` | 140 T/s | Math (94% MATH-500), code |
+| `meta-llama/llama-4-scout-17b-16e-instruct` | — | Vision + text tasks |
+| `groq/compound` | 450 T/s | Built-in web search & code execution |
+
+> 📚 See [Groq Models Documentation](https://console.groq.com/docs/models) for the complete list.
 
 ### RAG Settings
 
@@ -277,7 +285,12 @@ await sleep(1000);  // Wait 1 second
 
 ### "Model not found"
 
-Check [Groq's model list](https://console.groq.com/docs/models) for valid model names.
+Check [Groq's model list](https://console.groq.com/docs/models) for valid model names. You can also get the current list programmatically:
+
+```bash
+curl https://api.groq.com/openai/v1/models \
+  -H "Authorization: Bearer $GROQ_API_KEY"
+```
 
 ---
 
@@ -286,3 +299,11 @@ Check [Groq's model list](https://console.groq.com/docs/models) for valid model 
 - [Cookbook](./cookbook.md) - Real-world patterns
 - [Examples](./examples.md) - More code examples
 - [API Reference](./api-reference.md) - Complete API docs
+
+## Groq Resources
+
+- 📚 [Groq Models](https://console.groq.com/docs/models) - All available models
+- 🧠 [Reasoning Models](https://console.groq.com/docs/reasoning) - Math & logic models
+- 👁️ [Vision Models](https://console.groq.com/docs/vision) - Image input support
+- 🛡️ [Content Moderation](https://console.groq.com/docs/content-moderation) - Safety models
+- 📖 [API Reference](https://console.groq.com/docs/api-reference) - Groq API docs

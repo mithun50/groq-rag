@@ -14,6 +14,13 @@ Extended Groq SDK with RAG (Retrieval-Augmented Generation), web browsing, and a
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Supported Models](#supported-models)
+  - [Production Models](#production-models)
+  - [Compound AI Systems](#compound-ai-systems)
+  - [Preview Models](#preview-models)
+  - [Reasoning Models](#reasoning-models)
+  - [Vision Models](#vision-models)
+  - [Safety & Moderation Models](#safety--moderation-models)
+  - [Feature Compatibility](#feature-compatibility)
 - [Core Modules](#core-modules)
   - [GroqRAG Client](#groqrag-client)
   - [RAG Module](#rag-module)
@@ -114,16 +121,91 @@ console.log('Tools used:', result.toolCalls.map(t => t.name));
 
 ## Supported Models
 
-This package works with all Groq-supported models:
+This package supports **all Groq models** through direct API passthrough. Any model available on Groq works with groq-rag.
 
-| Model | Parameters | Best For |
-|-------|------------|----------|
-| `llama-3.3-70b-versatile` | 70B | General purpose, highest quality |
-| `llama-3.1-8b-instant` | 8B | Fast responses, cost-effective |
-| `qwen/qwen3-32b` | 32B | Strong reasoning, alternative to Llama |
-| `meta-llama/llama-4-scout-17b-16e-instruct` | 17B | Vision tasks, newest architecture |
+### Production Models
 
-See [Groq Models](https://console.groq.com/docs/models) for the complete list.
+| Model ID | Developer | Speed | Context | Best For |
+|----------|-----------|-------|---------|----------|
+| `llama-3.3-70b-versatile` | Meta | 280 T/s | 131K | General purpose, highest quality |
+| `llama-3.1-8b-instant` | Meta | 560 T/s | 131K | Fast responses, cost-effective |
+| `openai/gpt-oss-120b` | OpenAI | 500 T/s | 131K | Complex reasoning, flagship open model |
+| `openai/gpt-oss-20b` | OpenAI | 1000 T/s | 131K | Fast reasoning tasks |
+
+### Compound AI Systems
+
+| Model ID | Description |
+|----------|-------------|
+| `groq/compound` | AI system with built-in web search & code execution |
+| `groq/compound-mini` | Lightweight compound system |
+
+### Preview Models
+
+| Model ID | Developer | Features |
+|----------|-----------|----------|
+| `meta-llama/llama-4-scout-17b-16e-instruct` | Meta | 🖼️ Vision, 128K context |
+| `meta-llama/llama-4-maverick-17b-128e-instruct` | Meta | 🖼️ Vision, 128K context |
+| `qwen/qwen3-32b` | Alibaba | Strong reasoning |
+| `moonshotai/kimi-k2-instruct-0905` | Moonshot AI | Extended context |
+| `deepseek-r1-distill-qwen-32b` | DeepSeek | Math & code reasoning, 128K context |
+
+### Reasoning Models
+
+Best for math, logic, and complex problem-solving:
+
+| Model ID | Strengths |
+|----------|-----------|
+| `openai/gpt-oss-120b` | Complex reasoning with tools |
+| `openai/gpt-oss-20b` | Fast reasoning |
+| `qwen/qwen3-32b` | Math, structured thinking |
+| `deepseek-r1-distill-qwen-32b` | Math (94.3% MATH-500), code (1691 CodeForces) |
+
+### Vision Models
+
+Support image inputs alongside text:
+
+| Model ID | Max Images | Max Resolution |
+|----------|------------|----------------|
+| `meta-llama/llama-4-scout-17b-16e-instruct` | 5/request | 33 megapixels |
+| `meta-llama/llama-4-maverick-17b-128e-instruct` | 5/request | 33 megapixels |
+
+### Safety & Moderation Models
+
+| Model ID | Purpose |
+|----------|---------|
+| `meta-llama/llama-guard-4-12b` | Content safety classification (text & images) |
+| `openai/gpt-oss-safeguard-20b` | Custom policy enforcement |
+| `meta-llama/llama-prompt-guard-2-86m` | Prompt injection detection |
+| `meta-llama/llama-prompt-guard-2-22m` | Lightweight injection detection |
+
+### Audio Models
+
+| Model ID | Purpose |
+|----------|---------|
+| `whisper-large-v3` | Speech-to-text transcription |
+| `whisper-large-v3-turbo` | Fast transcription |
+
+### Feature Compatibility
+
+| Feature | Compatible Models |
+|---------|-------------------|
+| **RAG** | All chat models (11+) |
+| **Web Search** | All chat models (11+) |
+| **URL Fetch** | All chat models (11+) |
+| **Agents (Tool Use)** | All chat models with function calling |
+| **Streaming** | All chat models |
+| **Vision + RAG** | llama-4-scout, llama-4-maverick |
+
+### References
+
+- 📚 [Groq Models Documentation](https://console.groq.com/docs/models) - Complete model list & specs
+- 🧠 [Reasoning Models Guide](https://console.groq.com/docs/reasoning) - Using reasoning models
+- 👁️ [Vision Models Guide](https://console.groq.com/docs/vision) - Image input support
+- 🛡️ [Content Moderation](https://console.groq.com/docs/content-moderation) - Safety models
+- 📖 [Groq API Reference](https://console.groq.com/docs/api-reference) - Full API documentation
+- 💰 [Pricing](https://groq.com/pricing) - Model pricing information
+
+> **Note:** Model availability may change. Use the [Groq Models API](https://api.groq.com/openai/v1/models) to get the current list programmatically.
 
 ## Core Modules
 

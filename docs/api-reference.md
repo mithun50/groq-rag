@@ -54,11 +54,11 @@ await client.initRAG({
 
 ### client.complete(params)
 
-Standard chat completion.
+Standard chat completion. Supports all [Groq models](https://console.groq.com/docs/models).
 
 ```typescript
 const response = await client.complete({
-  model: string,
+  model: string,           // Any Groq chat model
   messages: Message[],
   temperature?: number,
   maxTokens?: number,
@@ -66,6 +66,12 @@ const response = await client.complete({
 
 // Returns: Groq.ChatCompletion
 ```
+
+**Recommended models:**
+- `llama-3.3-70b-versatile` - Best quality
+- `llama-3.1-8b-instant` - Fastest
+- `openai/gpt-oss-120b` - Complex reasoning
+- `groq/compound` - Built-in tools
 
 ### client.stream(params)
 
@@ -86,13 +92,15 @@ Create agent with custom tools.
 ```typescript
 const agent = client.createAgent({
   name?: string,
-  model?: string,          // Default: llama-3.3-70b-versatile
+  model?: string,          // Any Groq model (default: llama-3.3-70b-versatile)
   systemPrompt?: string,
   tools?: ToolDefinition[],
   maxIterations?: number,  // Default: 10
   verbose?: boolean,       // Log reasoning
 });
 ```
+
+> **Supported models:** All [Groq chat models](https://console.groq.com/docs/models) work with agents.
 
 ### client.createAgentWithBuiltins(config)
 
