@@ -2,6 +2,8 @@
 
 Get up and running with groq-rag in 5 minutes.
 
+> **groq-rag includes all functions from the official groq-sdk.** You can use it as a drop-in replacement with additional RAG, web browsing, and agent capabilities.
+
 ## Prerequisites
 
 - Node.js 18+

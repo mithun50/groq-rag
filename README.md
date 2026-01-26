@@ -9,6 +9,8 @@
 
 Extended Groq SDK with RAG (Retrieval-Augmented Generation), web browsing, and autonomous agent capabilities. Build intelligent AI applications that can search the web, fetch URLs, query knowledge bases, and reason through complex tasks.
 
+> **Note:** groq-rag includes **all functions from the official [groq-sdk](https://www.npmjs.com/package/groq-sdk)**. You can use it as a drop-in replacement with additional RAG, web, and agent capabilities.
+
 ## Table of Contents
 
 - [Features](#features)
@@ -45,6 +47,7 @@ Extended Groq SDK with RAG (Retrieval-Augmented Generation), web browsing, and a
 
 | Feature | Description |
 |---------|-------------|
+| **Full Groq SDK** | All official groq-sdk functions included - use as drop-in replacement |
 | **RAG Support** | Built-in vector store with document chunking, embedding, and semantic retrieval |
 | **Web Fetching** | Fetch and parse web pages to clean markdown with metadata extraction |
 | **Web Search** | DuckDuckGo (free), Brave Search, and Serper (Google) integration |
@@ -224,7 +227,7 @@ Support image inputs alongside text:
 
 ### GroqRAG Client
 
-The main entry point providing unified access to all functionality.
+The main entry point providing unified access to all functionality. **Includes all groq-sdk methods** - works as a drop-in replacement for the official Groq SDK.
 
 ```typescript
 import GroqRAG from 'groq-rag';
