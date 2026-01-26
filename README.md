@@ -1,6 +1,7 @@
 # groq-rag
 
 [![npm version](https://badge.fury.io/js/groq-rag.svg)](https://www.npmjs.com/package/groq-rag)
+[![GitHub Package](https://img.shields.io/badge/GitHub%20Package-@mithun50%2Fgroq--rag-blue)](https://github.com/mithun50/groq-rag/packages)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
@@ -55,8 +56,20 @@ Extended Groq SDK with RAG (Retrieval-Augmented Generation), web browsing, and a
 
 ## Installation
 
+### From npm (Recommended)
+
 ```bash
 npm install groq-rag
+```
+
+### From GitHub Packages
+
+```bash
+# Add to your .npmrc
+echo "@mithun50:registry=https://npm.pkg.github.com" >> .npmrc
+
+# Install
+npm install @mithun50/groq-rag
 ```
 
 **Requirements:**
@@ -837,3 +850,5 @@ MIT - see [LICENSE](LICENSE) for details.
 **Repository:** [github.com/mithun50/groq-rag](https://github.com/mithun50/groq-rag)
 
 **npm:** [npmjs.com/package/groq-rag](https://www.npmjs.com/package/groq-rag)
+
+**GitHub Packages:** [@mithun50/groq-rag](https://github.com/mithun50/groq-rag/packages)

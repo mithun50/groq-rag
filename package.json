@@ -24,7 +24,10 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "publish:npm": "npm publish",
+    "publish:github": "npm run build && sed -i 's/\"name\": \"groq-rag\"/\"name\": \"@mithun50\\/groq-rag\"/' package.json && npm publish --registry=https://npm.pkg.github.com; sed -i 's/\"name\": \"@mithun50\\/groq-rag\"/\"name\": \"groq-rag\"/' package.json",
+    "publish:all": "./scripts/publish-all.sh"
   },
   "keywords": [
     "groq",

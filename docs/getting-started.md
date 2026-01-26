@@ -9,8 +9,20 @@ Get up and running with groq-rag in 5 minutes.
 
 ## Installation
 
+### From npm (Recommended)
+
 ```bash
 npm install groq-rag
+```
+
+### From GitHub Packages
+
+```bash
+# Add to your .npmrc
+echo "@mithun50:registry=https://npm.pkg.github.com" >> .npmrc
+
+# Install
+npm install @mithun50/groq-rag
 ```
 
 ## Setup API Key
