@@ -1,3 +1,12 @@
+/**
+ * GroqRAG Client
+ *
+ * Extended client built on the official Groq TypeScript SDK (groq-sdk).
+ * Provides 100% API compatibility with groq-sdk plus RAG, web, and agent capabilities.
+ *
+ * @see https://github.com/groq/groq-typescript - Official Groq TypeScript SDK
+ */
+
 import Groq from 'groq-sdk';
 import type {
   ChatCompletion,
@@ -31,7 +40,24 @@ import {
 import { formatContext } from './utils/helpers';
 
 /**
- * Extended Groq client with RAG, web, and agent capabilities
+ * Extended Groq client with RAG, web, and agent capabilities.
+ *
+ * Built on the official Groq TypeScript SDK - all groq-sdk APIs are fully supported.
+ * Access the underlying Groq client via the `client` property for direct SDK usage.
+ *
+ * @example
+ * ```typescript
+ * import GroqRAG from 'groq-rag';
+ *
+ * const client = new GroqRAG({ apiKey: process.env.GROQ_API_KEY });
+ *
+ * // Use extended features
+ * await client.initRAG();
+ * const response = await client.chat.withRAG({ messages: [...] });
+ *
+ * // Or use Groq SDK directly
+ * const chat = await client.client.chat.completions.create({ ... });
+ * ```
  */
 export class GroqRAG {
   private groq: Groq;
@@ -242,12 +268,18 @@ ${context}`;
     model?: string;
     searchQuery?: string;
     maxResults?: number;
+    /** Max characters per search snippet (optional - no limit if not set) */
+    maxSnippetLength?: number;
+    /** Max total characters for all search results (optional - no limit if not set) */
+    maxTotalContentLength?: number;
   }): Promise<{ content: string; sources: WebSearchResult[] }> {
     const {
       messages,
       model = 'llama-3.3-70b-versatile',
       searchQuery,
       maxResults = 5,
+      maxSnippetLength,
+      maxTotalContentLength,
     } = options;
 
     // Get search query from last user message if not provided
@@ -256,7 +288,11 @@ ${context}`;
       (typeof lastUserMessage?.content === 'string' ? lastUserMessage.content : '');
 
     // Search the web
-    const searchResults = await this.parent.getSearchProvider().search(query, { maxResults });
+    const searchResults = await this.parent.getSearchProvider().search(query, {
+      maxResults,
+      maxSnippetLength,
+      maxTotalContentLength,
+    });
 
     // Format search results as context
     const context = searchResults
@@ -287,11 +323,15 @@ ${context}`;
     messages: Groq.Chat.ChatCompletionMessageParam[];
     url: string;
     model?: string;
+    /** Max characters for fetched content (optional - no limit if not set) */
+    maxContentLength?: number;
+    /** Max tokens for fetched content - uses ~4 chars/token (optional - no limit if not set) */
+    maxTokens?: number;
   }): Promise<{ content: string; source: FetchResult }> {
-    const { messages, url, model = 'llama-3.3-70b-versatile' } = options;
+    const { messages, url, model = 'llama-3.3-70b-versatile', maxContentLength, maxTokens } = options;
 
     // Fetch the URL
-    const fetchResult = await this.parent.getFetcher().fetch(url);
+    const fetchResult = await this.parent.getFetcher().fetch(url, { maxContentLength, maxTokens });
 
     const systemPrompt = `You are a helpful assistant. Use the following web page content to answer questions.
 

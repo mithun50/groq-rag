@@ -123,6 +123,10 @@ export interface FetchOptions {
   extractText?: boolean;
   includeLinks?: boolean;
   includeImages?: boolean;
+  /** Max characters for content/markdown (optional - no limit if not set) */
+  maxContentLength?: number;
+  /** Estimated token limit - uses ~4 chars per token (optional - no limit if not set) */
+  maxTokens?: number;
 }
 
 export interface FetchResult {
@@ -145,6 +149,10 @@ export interface SearchOptions {
   language?: string;
   region?: string;
   safeSearch?: boolean;
+  /** Max characters per snippet (optional - no limit if not set) */
+  maxSnippetLength?: number;
+  /** Max total characters for all results combined (optional - no limit if not set) */
+  maxTotalContentLength?: number;
 }
 
 export interface WebSearchResult {

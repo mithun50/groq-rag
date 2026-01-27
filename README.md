@@ -6,10 +6,28 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
 [![Demo](https://img.shields.io/badge/Demo-Live-brightgreen.svg)](https://groq-rag.onrender.com)
+[![Groq SDK](https://img.shields.io/badge/Built%20on-Groq%20SDK-orange.svg)](https://github.com/groq/groq-typescript)
 
-Extended Groq SDK with RAG (Retrieval-Augmented Generation), web browsing, and autonomous agent capabilities. Build intelligent AI applications that can search the web, fetch URLs, query knowledge bases, and reason through complex tasks.
+Extended [Groq TypeScript SDK](https://github.com/groq/groq-typescript) with RAG (Retrieval-Augmented Generation), web browsing, and autonomous agent capabilities. Build intelligent AI applications that can search the web, fetch URLs, query knowledge bases, and reason through complex tasks.
 
-> **Note:** groq-rag includes **all functions from the official [groq-sdk](https://www.npmjs.com/package/groq-sdk)**. You can use it as a drop-in replacement with additional RAG, web, and agent capabilities.
+> **🔌 Drop-in Replacement:** groq-rag includes **100% of the official [groq-sdk](https://www.npmjs.com/package/groq-sdk) API**. All Groq SDK functions, types, and features work seamlessly. Simply replace `groq-sdk` with `groq-rag` and gain RAG, web, and agent superpowers!
+
+## Groq SDK Compatibility
+
+groq-rag is built on top of the official [Groq TypeScript SDK](https://github.com/groq/groq-typescript) and provides full API compatibility:
+
+| Groq SDK Feature | groq-rag Support |
+|------------------|------------------|
+| Chat Completions | ✅ Full support |
+| Streaming | ✅ Full support |
+| Audio Transcription | ✅ Full support |
+| Audio Translation | ✅ Full support |
+| Models API | ✅ Full support |
+| Function Calling | ✅ Full support |
+| Vision | ✅ Full support |
+| All Types & Interfaces | ✅ Full support |
+
+**Plus additional features:** RAG, Web Search, URL Fetching, Autonomous Agents, Tool System
 
 ## Table of Contents
 
@@ -47,12 +65,13 @@ Extended Groq SDK with RAG (Retrieval-Augmented Generation), web browsing, and a
 
 | Feature | Description |
 |---------|-------------|
-| **Full Groq SDK** | All official groq-sdk functions included - use as drop-in replacement |
+| **100% Groq SDK API** | Complete [groq-sdk](https://github.com/groq/groq-typescript) compatibility - chat, streaming, audio, vision, function calling |
 | **RAG Support** | Built-in vector store with document chunking, embedding, and semantic retrieval |
 | **Web Fetching** | Fetch and parse web pages to clean markdown with metadata extraction |
 | **Web Search** | DuckDuckGo (free), Brave Search, and Serper (Google) integration |
 | **Agent System** | ReAct-style autonomous agents with tool use, memory, and streaming |
 | **Tool Framework** | Extensible tool system with built-in and custom tools |
+| **Content Limiting** | Optional token/character limits to control API costs |
 | **TypeScript** | Full type safety with comprehensive IntelliSense support |
 | **Zero Config** | Works out of the box with sensible defaults |
 | **Streaming** | Real-time streaming for both chat and agent execution |
@@ -81,7 +100,24 @@ npm install @mithun50/groq-rag
 
 ## Quick Start
 
-### Basic Chat
+### Migrating from groq-sdk
+
+Already using the official Groq SDK? Migration is seamless:
+
+```typescript
+// Before (groq-sdk)
+import Groq from 'groq-sdk';
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+// After (groq-rag) - just change the import!
+import GroqRAG from 'groq-rag';
+const groq = new GroqRAG({ apiKey: process.env.GROQ_API_KEY });
+
+// All your existing code works exactly the same
+// Plus you now have access to RAG, web, and agent features!
+```
+
+### Basic Chat (Groq SDK Compatible)
 
 ```typescript
 import GroqRAG from 'groq-rag';
@@ -90,12 +126,16 @@ const client = new GroqRAG({
   apiKey: process.env.GROQ_API_KEY,
 });
 
+// Standard Groq SDK chat completion - works exactly the same!
 const response = await client.complete({
   model: 'llama-3.3-70b-versatile',
   messages: [{ role: 'user', content: 'Hello!' }],
 });
 
 console.log(response.choices[0].message.content);
+
+// Access the underlying Groq client for advanced usage
+const groqClient = client.client; // Full Groq SDK instance
 ```
 
 ### RAG-Augmented Chat
@@ -227,7 +267,7 @@ Support image inputs alongside text:
 
 ### GroqRAG Client
 
-The main entry point providing unified access to all functionality. **Includes all groq-sdk methods** - works as a drop-in replacement for the official Groq SDK.
+The main entry point providing unified access to all functionality. **Built on the official [Groq TypeScript SDK](https://github.com/groq/groq-typescript)** - includes 100% API compatibility plus extended features.
 
 ```typescript
 import GroqRAG from 'groq-rag';
@@ -238,15 +278,24 @@ const client = new GroqRAG({
   timeout?: number,      // Request timeout in milliseconds
   maxRetries?: number,   // Max retry attempts (default: 2)
 });
+
+// Access the underlying Groq SDK client directly
+const groqSdk = client.client; // Full Groq SDK instance
 ```
 
-**Methods:**
+**Groq SDK Passthrough Methods:**
+
+| Method | Description |
+|--------|-------------|
+| `complete(params)` | Chat completion (Groq SDK passthrough) |
+| `stream(params)` | Streaming chat completion (Groq SDK passthrough) |
+| `client` | Direct access to underlying Groq SDK instance |
+
+**Extended Methods:**
 
 | Method | Description |
 |--------|-------------|
 | `initRAG(options)` | Initialize RAG with vector store and embeddings |
-| `complete(params)` | Standard chat completion (passthrough to Groq) |
-| `stream(params)` | Streaming chat completion |
 | `createAgent(config)` | Create a basic agent |
 | `createAgentWithBuiltins(config)` | Create agent with all built-in tools |
 | `getRetriever()` | Get the RAG retriever instance |
@@ -255,6 +304,28 @@ const client = new GroqRAG({
 - `client.chat` - Enhanced chat methods (withRAG, withWebSearch, withUrl)
 - `client.web` - Web operations (fetch, search, fetchMany)
 - `client.rag` - Knowledge base management (addDocument, query, getContext)
+
+**Using Groq SDK Features Directly:**
+
+```typescript
+// All Groq SDK APIs are accessible
+const client = new GroqRAG();
+
+// Chat completions
+const chat = await client.client.chat.completions.create({
+  model: 'llama-3.3-70b-versatile',
+  messages: [{ role: 'user', content: 'Hello!' }],
+});
+
+// Audio transcription
+const transcription = await client.client.audio.transcriptions.create({
+  file: audioFile,
+  model: 'whisper-large-v3',
+});
+
+// List available models
+const models = await client.client.models.list();
+```
 
 ---
 
@@ -336,10 +407,12 @@ Fetch, parse, and search the web.
 // Fetch single URL
 const result = await client.web.fetch(url, {
   headers?: Record<string, string>,
-  timeout?: number,        // Default: 30000ms
-  maxLength?: number,      // Max content length
-  includeLinks?: boolean,  // Extract links
-  includeImages?: boolean, // Extract images
+  timeout?: number,           // Default: 30000ms
+  maxLength?: number,         // Max content length
+  includeLinks?: boolean,     // Extract links
+  includeImages?: boolean,    // Extract images
+  maxContentLength?: number,  // Truncate content to N chars (optional)
+  maxTokens?: number,         // Truncate to ~N tokens (optional, ~4 chars/token)
 });
 
 // Returns:
@@ -365,10 +438,12 @@ const markdown = await client.web.fetchMarkdown(url);
 
 ```typescript
 const results = await client.web.search('query', {
-  maxResults?: number,   // Default: 10
-  safeSearch?: boolean,  // Default: true
+  maxResults?: number,            // Default: 10
+  safeSearch?: boolean,           // Default: true
   language?: string,
   region?: string,
+  maxSnippetLength?: number,      // Truncate each snippet to N chars (optional)
+  maxTotalContentLength?: number, // Max total chars for all results (optional)
 });
 
 // Returns:
@@ -414,8 +489,10 @@ const response = await client.chat.withRAG({
 const response = await client.chat.withWebSearch({
   messages: Message[],
   model?: string,
-  searchQuery?: string,    // Custom search query
-  maxResults?: number,     // Search results to include
+  searchQuery?: string,           // Custom search query
+  maxResults?: number,            // Search results to include
+  maxSnippetLength?: number,      // Truncate each snippet (optional)
+  maxTotalContentLength?: number, // Max total chars for context (optional)
 });
 ```
 
@@ -426,6 +503,8 @@ const response = await client.chat.withUrl({
   messages: Message[],
   url: string,
   model?: string,
+  maxContentLength?: number,  // Truncate content to N chars (optional)
+  maxTokens?: number,         // Truncate to ~N tokens (optional)
 });
 ```
 
@@ -668,6 +747,83 @@ await client.initRAG({
 });
 ```
 
+---
+
+### Content Limiting (Token Control)
+
+Control content size to avoid burning API tokens. All limits are **optional** - if not set, full content is returned.
+
+#### Web Search Limiting
+
+```typescript
+// Limit search result content
+const results = await client.web.search('query', {
+  maxResults: 5,
+  maxSnippetLength: 200,        // Max 200 chars per snippet
+  maxTotalContentLength: 2000,  // Max 2000 chars total
+});
+```
+
+#### URL Fetch Limiting
+
+```typescript
+// Limit fetched page content
+const result = await client.web.fetch(url, {
+  maxContentLength: 5000,  // Max 5000 characters
+});
+
+// Or use token-based limiting (~4 chars per token)
+const result = await client.web.fetch(url, {
+  maxTokens: 1000,  // ~4000 characters
+});
+```
+
+#### Chat with Content Limits
+
+```typescript
+// Web search with limits
+const response = await client.chat.withWebSearch({
+  messages: [{ role: 'user', content: 'Latest AI news?' }],
+  maxResults: 3,
+  maxSnippetLength: 150,
+  maxTotalContentLength: 1500,
+});
+
+// URL chat with limits
+const response = await client.chat.withUrl({
+  messages: [{ role: 'user', content: 'Summarize this page' }],
+  url: 'https://example.com/article',
+  maxTokens: 2000,  // Limit context to ~2000 tokens
+});
+```
+
+#### Built-in Tools with Limits
+
+When using agents, the tools also support content limiting:
+
+```typescript
+// web_search tool parameters
+{
+  query: 'search query',
+  maxResults: 5,
+  maxSnippetLength: 200,         // Optional
+  maxTotalContentLength: 2000,   // Optional
+}
+
+// fetch_url tool parameters
+{
+  url: 'https://example.com',
+  maxContentLength: 5000,  // Optional
+  maxTokens: 1000,         // Optional
+}
+```
+
+**Why use content limiting?**
+- Reduce API token costs
+- Prevent context overflow on large pages
+- Faster responses with less data
+- More focused, relevant context
+
 ## Utilities
 
 Standalone utility functions exported for direct use.
@@ -832,6 +988,33 @@ npm run lint
 npm run typecheck
 ```
 
+## Changelog
+
+### v0.1.4
+
+- **New Feature: Content Limiting** - Control token usage with optional limits
+  - `maxSnippetLength` - Truncate search result snippets
+  - `maxTotalContentLength` - Limit total search content
+  - `maxContentLength` - Limit fetched URL content
+  - `maxTokens` - Token-based content limiting (~4 chars/token)
+- **GitHub Templates** - Added issue and PR templates
+- **Bug Fixes** - Fixed workflow dist file check
+- **Tests** - Added content limiting tests, fixed test hanging issue
+
+### v0.1.3
+
+- Clarified groq-rag includes all groq-sdk functions
+- Updated npm badge
+- Added GitHub Packages support
+- Updated supported models list
+
+### v0.1.2
+
+- Initial public release
+- RAG support with vector stores
+- Web fetching and search
+- Agent system with tools
+
 ## Contributing
 
 Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details on:
@@ -846,6 +1029,12 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 
 MIT - see [LICENSE](LICENSE) for details.
 
+## Acknowledgments
+
+- **[Groq](https://groq.com/)** - For the blazing fast LPU inference engine
+- **[Groq TypeScript SDK](https://github.com/groq/groq-typescript)** - The official SDK this library extends
+- **[Groq API](https://console.groq.com/docs)** - For the excellent API documentation
+
 ---
 
 **Author:** [mithun50](https://github.com/mithun50)
@@ -855,3 +1044,5 @@ MIT - see [LICENSE](LICENSE) for details.
 **npm:** [npmjs.com/package/groq-rag](https://www.npmjs.com/package/groq-rag)
 
 **GitHub Packages:** [@mithun50/groq-rag](https://github.com/mithun50/groq-rag/packages)
+
+**Built with:** [groq-sdk](https://github.com/groq/groq-typescript) | [cheerio](https://cheerio.js.org/) | [turndown](https://github.com/mixmark-io/turndown)

@@ -42,6 +42,24 @@ export class WebFetcher {
   }
 
   /**
+   * Truncate content to specified limit
+   */
+  private truncateContent(content: string, maxLength?: number): string {
+    if (!maxLength || content.length <= maxLength) return content;
+    return content.slice(0, maxLength - 3) + '...';
+  }
+
+  /**
+   * Calculate max length from options (maxContentLength or maxTokens)
+   */
+  private getMaxLength(options: FetchOptions): number | undefined {
+    const { maxContentLength, maxTokens } = options;
+    if (maxContentLength) return maxContentLength;
+    if (maxTokens) return maxTokens * 4; // ~4 chars per token estimate
+    return undefined;
+  }
+
+  /**
    * Fetch a URL and extract content
    */
   async fetch(url: string, options: FetchOptions = {}): Promise<FetchResult> {
@@ -52,6 +70,8 @@ export class WebFetcher {
       includeLinks = false,
       includeImages = false,
     } = options;
+
+    const maxLength = this.getMaxLength(options);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -181,8 +201,8 @@ export class WebFetcher {
       return {
         url,
         title,
-        content,
-        markdown,
+        content: this.truncateContent(content, maxLength),
+        markdown: markdown ? this.truncateContent(markdown, maxLength) : undefined,
         links,
         images,
         metadata,

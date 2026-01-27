@@ -8,6 +8,72 @@ export interface SearchProvider {
 }
 
 /**
+ * Truncate text to specified length with ellipsis
+ */
+function truncateText(text: string, maxLength?: number): string {
+  if (!maxLength || text.length <= maxLength) return text;
+  return text.slice(0, maxLength - 3) + '...';
+}
+
+/**
+ * Apply content limits to search results
+ */
+function applyContentLimits(
+  results: WebSearchResult[],
+  options: SearchOptions
+): WebSearchResult[] {
+  const { maxSnippetLength, maxTotalContentLength } = options;
+
+  // If no limits set, return as-is
+  if (!maxSnippetLength && !maxTotalContentLength) return results;
+
+  let totalLength = 0;
+  const limitedResults: WebSearchResult[] = [];
+
+  for (const result of results) {
+    // Truncate individual snippet if needed
+    let snippet = maxSnippetLength
+      ? truncateText(result.snippet, maxSnippetLength)
+      : result.snippet;
+
+    // Calculate fixed length (title + url)
+    const fixedLength = result.title.length + result.url.length;
+
+    // Check total content limit
+    if (maxTotalContentLength) {
+      const remaining = maxTotalContentLength - totalLength - fixedLength;
+
+      // If no room left, stop
+      if (remaining <= 0 && limitedResults.length > 0) {
+        break;
+      }
+
+      // Truncate snippet to fit remaining space
+      if (remaining < snippet.length) {
+        // Always include at least 20 chars or the full snippet if shorter
+        const minSnippet = Math.min(20, snippet.length);
+        if (remaining >= minSnippet || limitedResults.length === 0) {
+          snippet = truncateText(snippet, Math.max(remaining, minSnippet));
+        } else {
+          break;
+        }
+      }
+    }
+
+    const resultLength = fixedLength + snippet.length;
+    totalLength += resultLength;
+    limitedResults.push({ ...result, snippet });
+
+    // Stop if we've reached the limit
+    if (maxTotalContentLength && totalLength >= maxTotalContentLength) {
+      break;
+    }
+  }
+
+  return limitedResults;
+}
+
+/**
  * DuckDuckGo search (no API key required)
  */
 export class DuckDuckGoSearch implements SearchProvider {
@@ -33,7 +99,7 @@ export class DuckDuckGoSearch implements SearchProvider {
       const html = await response.text();
       const results = this.parseResults(html, maxResults);
 
-      return results;
+      return applyContentLimits(results, options);
     } catch (error) {
       console.error('DuckDuckGo search error:', error);
       return [];
@@ -140,12 +206,14 @@ export class BraveSearch implements SearchProvider {
       };
     };
 
-    return (data.web?.results || []).map((result, index) => ({
+    const results = (data.web?.results || []).map((result, index) => ({
       title: result.title,
       url: result.url,
       snippet: result.description,
       position: index + 1,
     }));
+
+    return applyContentLimits(results, options);
   }
 }
 
@@ -188,12 +256,14 @@ export class SerperSearch implements SearchProvider {
       }>;
     };
 
-    return (data.organic || []).map(result => ({
+    const results = (data.organic || []).map(result => ({
       title: result.title,
       url: result.link,
       snippet: result.snippet,
       position: result.position,
     }));
+
+    return applyContentLimits(results, options);
   }
 }
 

@@ -23,12 +23,29 @@ export function createWebSearchTool(
           type: 'number',
           description: 'Maximum number of results to return (default: 5)',
         },
+        maxSnippetLength: {
+          type: 'number',
+          description: 'Maximum characters per snippet (optional - no limit if not set)',
+        },
+        maxTotalContentLength: {
+          type: 'number',
+          description: 'Maximum total characters for all results (optional - no limit if not set)',
+        },
       },
       required: ['query'],
     },
     execute: async (params) => {
-      const { query, maxResults = 5 } = params as { query: string; maxResults?: number };
-      const results = await searchProvider.search(query, { maxResults });
+      const { query, maxResults = 5, maxSnippetLength, maxTotalContentLength } = params as {
+        query: string;
+        maxResults?: number;
+        maxSnippetLength?: number;
+        maxTotalContentLength?: number;
+      };
+      const results = await searchProvider.search(query, {
+        maxResults,
+        maxSnippetLength,
+        maxTotalContentLength,
+      });
       return results.map(r => ({
         title: r.title,
         url: r.url,
@@ -58,12 +75,25 @@ export function createFetchUrlTool(
           type: 'boolean',
           description: 'Include links found on the page (default: false)',
         },
+        maxContentLength: {
+          type: 'number',
+          description: 'Maximum characters for content (optional - no limit if not set)',
+        },
+        maxTokens: {
+          type: 'number',
+          description: 'Maximum tokens for content, ~4 chars/token (optional - no limit if not set)',
+        },
       },
       required: ['url'],
     },
     execute: async (params) => {
-      const { url, includeLinks = false } = params as { url: string; includeLinks?: boolean };
-      const result = await fetcher.fetch(url, { includeLinks });
+      const { url, includeLinks = false, maxContentLength, maxTokens } = params as {
+        url: string;
+        includeLinks?: boolean;
+        maxContentLength?: number;
+        maxTokens?: number;
+      };
+      const result = await fetcher.fetch(url, { includeLinks, maxContentLength, maxTokens });
       return {
         title: result.title,
         content: result.markdown || result.content,

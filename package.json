@@ -1,7 +1,7 @@
 {
   "name": "groq-rag",
-  "version": "0.1.3",
-  "description": "Extended Groq SDK with RAG, web browsing, and agent capabilities",
+  "version": "0.1.4",
+  "description": "Extended Groq TypeScript SDK with RAG, web browsing, and agent capabilities - 100% groq-sdk API compatible",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
@@ -31,6 +31,9 @@
   },
   "keywords": [
     "groq",
+    "groq-sdk",
+    "groq-typescript",
+    "groq-api",
     "llm",
     "rag",
     "retrieval-augmented-generation",
@@ -38,7 +41,10 @@
     "agent",
     "web-browsing",
     "embeddings",
-    "vector-search"
+    "vector-search",
+    "llama",
+    "mixtral",
+    "chatbot"
   ],
   "author": "mithun50",
   "license": "MIT",
