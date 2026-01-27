@@ -1,0 +1,124 @@
+# groq-rag
+
+> Extended Groq TypeScript SDK with RAG, web browsing, and agent capabilities - 100% groq-sdk API compatible
+
+## Overview
+
+groq-rag extends the official Groq TypeScript SDK (groq-sdk) with:
+- RAG (Retrieval-Augmented Generation) with document chunking and retrieval
+- Web search (DuckDuckGo, Brave, Serper)
+- URL fetching and content extraction
+- ReAct-style AI agents with tool use
+- Content limiting to control token usage
+
+## Installation
+
+```bash
+npm install groq-rag
+# or from GitHub Packages
+npm install @mithun50/groq-rag --registry=https://npm.pkg.github.com
+```
+
+## Quick Start
+
+```typescript
+import Groq from 'groq-rag';
+
+const client = new Groq({ apiKey: 'your-api-key' });
+
+// Standard Groq SDK usage (100% compatible)
+const response = await client.chat.completions.create({
+  model: 'llama-3.3-70b-versatile',
+  messages: [{ role: 'user', content: 'Hello!' }]
+});
+
+// RAG with documents
+const ragResponse = await client.chat.completions.createWithRetrieval({
+  model: 'llama-3.3-70b-versatile',
+  messages: [{ role: 'user', content: 'What is the refund policy?' }],
+  documents: ['Your refund policy document here...'],
+  retrievalOptions: { maxChunks: 3 }
+});
+
+// Web search augmented
+const webResponse = await client.chat.completions.createWithSearch({
+  model: 'llama-3.3-70b-versatile',
+  messages: [{ role: 'user', content: 'Latest news about TypeScript?' }],
+  searchOptions: { maxResults: 5 }
+});
+
+// URL content augmented
+const urlResponse = await client.chat.completions.createWithUrl({
+  model: 'llama-3.3-70b-versatile',
+  messages: [{ role: 'user', content: 'Summarize this page' }],
+  url: 'https://example.com/article'
+});
+
+// AI Agent with tools
+const agent = client.agents.create({
+  model: 'llama-3.3-70b-versatile',
+  tools: ['web_search', 'url_fetch', 'calculator'],
+  maxIterations: 5
+});
+const result = await agent.run('Research and summarize AI trends');
+```
+
+## Content Limiting (Token Control)
+
+```typescript
+// Limit web search content
+const response = await client.chat.completions.createWithSearch({
+  model: 'llama-3.3-70b-versatile',
+  messages: [{ role: 'user', content: 'Query' }],
+  searchOptions: {
+    maxResults: 5,
+    maxSnippetLength: 200,      // Max chars per snippet
+    maxTotalContentLength: 2000 // Max total chars
+  }
+});
+
+// Limit URL fetch content
+const response = await client.chat.completions.createWithUrl({
+  model: 'llama-3.3-70b-versatile',
+  messages: [{ role: 'user', content: 'Summarize' }],
+  url: 'https://example.com',
+  fetchOptions: {
+    maxContentLength: 5000, // Max chars
+    maxTokens: 1000         // Estimated token limit (~4 chars/token)
+  }
+});
+```
+
+## Supported Models
+
+All Groq models are supported:
+- llama-3.3-70b-versatile
+- llama-3.1-8b-instant
+- llama-3.2-90b-vision-preview
+- mixtral-8x7b-32768
+- gemma2-9b-it
+- And all other Groq models
+
+## API Reference
+
+### Client Methods
+- `chat.completions.create()` - Standard Groq chat completion
+- `chat.completions.createWithRetrieval()` - RAG with documents
+- `chat.completions.createWithSearch()` - Web search augmented
+- `chat.completions.createWithUrl()` - URL content augmented
+
+### Agent Methods
+- `agents.create()` - Create a ReAct agent
+- `agent.run()` - Execute agent with a task
+
+### Built-in Tools
+- `web_search` - Search the web
+- `url_fetch` - Fetch and parse URL content
+- `calculator` - Basic math operations
+- `retrieval` - Document retrieval
+
+## Links
+
+- GitHub: https://github.com/mithun50/groq-rag
+- npm: https://www.npmjs.com/package/groq-rag
+- Documentation: https://github.com/mithun50/groq-rag#readme
