@@ -4,11 +4,6 @@ on:
   release:
     types: [published]
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to publish'
-        required: false
-        default: 'current'
 
 jobs:
   publish-github:
@@ -23,8 +18,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@mithun50'
 
       - name: Install dependencies
         run: npm install
@@ -32,12 +25,18 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Update package name for GitHub Packages
+      - name: Create .npmrc for GitHub Packages
+        run: |
+          cat << EOF > "$HOME/.npmrc"
+          @mithun50:registry=https://npm.pkg.github.com/
+          //npm.pkg.github.com/:_authToken=$GITHUB_TOKEN
+          EOF
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update package name and publish
         run: |
           sed -i 's/"name": "groq-rag"/"name": "@mithun50\/groq-rag"/' package.json
-          cat package.json | head -5
-
-      - name: Publish to GitHub Packages
-        run: npm publish
+          npm publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
