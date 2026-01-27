@@ -7,6 +7,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
 [![Demo](https://img.shields.io/badge/Demo-Live-brightgreen.svg)](https://groq-rag.onrender.com)
 [![Groq SDK](https://img.shields.io/badge/Built%20on-Groq%20SDK-orange.svg)](https://github.com/groq/groq-typescript)
+[![Context7](https://img.shields.io/badge/Context7-AI%20Docs-purple.svg)](https://context7.com/mithun50/groq-rag)
 
 Extended [Groq TypeScript SDK](https://github.com/groq/groq-typescript) with RAG (Retrieval-Augmented Generation), web browsing, and autonomous agent capabilities. Build intelligent AI applications that can search the web, fetch URLs, query knowledge bases, and reason through complex tasks.
 
