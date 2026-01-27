@@ -3,6 +3,12 @@ name: Publish Package
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish'
+        required: false
+        default: 'current'
 
 jobs:
   publish-npm:
