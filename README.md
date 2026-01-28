@@ -8,6 +8,8 @@
 [![Demo](https://img.shields.io/badge/Demo-Live-brightgreen.svg)](https://groq-rag.onrender.com)
 [![Groq SDK](https://img.shields.io/badge/Built%20on-Groq%20SDK-orange.svg)](https://github.com/groq/groq-typescript)
 [![Context7](https://img.shields.io/badge/Context7-AI%20Docs-purple.svg)](https://context7.com/mithun50/groq-rag)
+[![Benchmark](https://img.shields.io/badge/Benchmark-1.7M%20ops%2Fs-brightgreen.svg)](#benchmarks)
+[![Groq API](https://img.shields.io/badge/Groq%20API-190ms-blue.svg)](#benchmarks)
 
 Extended [Groq TypeScript SDK](https://github.com/groq/groq-typescript) with RAG (Retrieval-Augmented Generation), web browsing, and autonomous agent capabilities. Build intelligent AI applications that can search the web, fetch URLs, query knowledge bases, and reason through complex tasks.
 
@@ -987,6 +989,37 @@ npm run lint
 
 # Type check
 npm run typecheck
+```
+
+## Benchmarks
+
+Performance benchmarks for groq-rag SDK operations.
+
+### Local Processing (CPU-bound)
+
+| Operation | Ops/sec | Avg Time |
+|-----------|---------|----------|
+| Content Truncation | **1,743,317** | 0.0006ms |
+| Context Formatting | **330,914** | 0.003ms |
+| Text Chunking | **84,861** | 0.01ms |
+
+### Network Operations (I/O-bound)
+
+| Operation | Ops/sec | Avg Time |
+|-----------|---------|----------|
+| Groq Chat Completion | 5.27 | 190ms |
+| URL Fetch | 5.05 | 198ms |
+| Content Limiting (Total) | 4.87 | 205ms |
+| Content Limiting (Snippet) | 3.09 | 323ms |
+| Chat with URL | 2.61 | 383ms |
+| Web Search (DuckDuckGo) | 1.83 | 546ms |
+| Chat with Web Search | 0.98 | 1024ms |
+
+> **Note**: Network operations are limited by external API latency (Groq, DuckDuckGo), not SDK performance. Local processing shows the SDK's actual code efficiency.
+
+Run benchmarks:
+```bash
+npm run benchmark
 ```
 
 ## Changelog
