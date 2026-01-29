@@ -9,6 +9,8 @@ export interface GroqRAGConfig {
   baseURL?: string;
   timeout?: number;
   maxRetries?: number;
+  /** Allow usage in browser environments (exposes API key - use with caution) */
+  dangerouslyAllowBrowser?: boolean;
 
   // Embedding configuration
   embedding?: EmbeddingConfig;

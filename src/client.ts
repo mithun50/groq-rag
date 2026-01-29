@@ -79,6 +79,7 @@ export class GroqRAG {
       baseURL: config.baseURL,
       timeout: config.timeout,
       maxRetries: config.maxRetries,
+      dangerouslyAllowBrowser: config.dangerouslyAllowBrowser,
     });
 
     // Initialize web modules
