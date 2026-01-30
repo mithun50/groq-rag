@@ -4,29 +4,33 @@ import { MCPServerConfig } from '../../src/mcp/types';
 
 // Mock the transports
 vi.mock('../../src/mcp/transports/stdio', () => ({
-  StdioTransport: vi.fn().mockImplementation(() => ({
-    connect: vi.fn().mockResolvedValue(undefined),
-    disconnect: vi.fn().mockResolvedValue(undefined),
-    send: vi.fn(),
-    notify: vi.fn().mockResolvedValue(undefined),
-    isConnected: vi.fn().mockReturnValue(true),
-    onNotification: vi.fn(),
-    onError: vi.fn(),
-    onDisconnect: vi.fn(),
-  })),
+  StdioTransport: vi.fn().mockImplementation(function() {
+    return {
+      connect: vi.fn().mockResolvedValue(undefined),
+      disconnect: vi.fn().mockResolvedValue(undefined),
+      send: vi.fn(),
+      notify: vi.fn().mockResolvedValue(undefined),
+      isConnected: vi.fn().mockReturnValue(true),
+      onNotification: vi.fn(),
+      onError: vi.fn(),
+      onDisconnect: vi.fn(),
+    };
+  }),
 }));
 
 vi.mock('../../src/mcp/transports/http', () => ({
-  HttpTransport: vi.fn().mockImplementation(() => ({
-    connect: vi.fn().mockResolvedValue(undefined),
-    disconnect: vi.fn().mockResolvedValue(undefined),
-    send: vi.fn(),
-    notify: vi.fn().mockResolvedValue(undefined),
-    isConnected: vi.fn().mockReturnValue(true),
-    onNotification: vi.fn(),
-    onError: vi.fn(),
-    onDisconnect: vi.fn(),
-  })),
+  HttpTransport: vi.fn().mockImplementation(function() {
+    return {
+      connect: vi.fn().mockResolvedValue(undefined),
+      disconnect: vi.fn().mockResolvedValue(undefined),
+      send: vi.fn(),
+      notify: vi.fn().mockResolvedValue(undefined),
+      isConnected: vi.fn().mockReturnValue(true),
+      onNotification: vi.fn(),
+      onError: vi.fn(),
+      onDisconnect: vi.fn(),
+    };
+  }),
 }));
 
 describe('MCPClient', () => {
@@ -113,16 +117,18 @@ describe('MCPClient', () => {
 
     it('should return namespaced tool names', async () => {
       const { StdioTransport } = await import('../../src/mcp/transports/stdio');
-      (StdioTransport as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
-        connect: vi.fn().mockResolvedValue(undefined),
-        disconnect: vi.fn().mockResolvedValue(undefined),
-        send: mockTransportSend,
-        notify: vi.fn().mockResolvedValue(undefined),
-        isConnected: vi.fn().mockReturnValue(true),
-        onNotification: vi.fn(),
-        onError: vi.fn(),
-        onDisconnect: vi.fn(),
-      }));
+      (StdioTransport as unknown as ReturnType<typeof vi.fn>).mockImplementation(function() {
+        return {
+          connect: vi.fn().mockResolvedValue(undefined),
+          disconnect: vi.fn().mockResolvedValue(undefined),
+          send: mockTransportSend,
+          notify: vi.fn().mockResolvedValue(undefined),
+          isConnected: vi.fn().mockReturnValue(true),
+          onNotification: vi.fn(),
+          onError: vi.fn(),
+          onDisconnect: vi.fn(),
+        };
+      });
 
       const client = createMCPClient({
         name: 'myserver',
