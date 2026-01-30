@@ -7,6 +7,7 @@ Real-world patterns and recipes for groq-rag.
 - [RAG Patterns](#rag-patterns)
 - [Agent Patterns](#agent-patterns)
 - [Web Patterns](#web-patterns)
+- [MCP Patterns](#mcp-patterns)
 - [Custom Tools](#custom-tools)
 - [Performance Tips](#performance-tips)
 
@@ -344,6 +345,170 @@ async function researchTopic(topic: string) {
     summary: response.choices[0].message.content,
     sources: urls
   };
+}
+```
+
+---
+
+## MCP Patterns
+
+### Multi-Server Agent
+
+Connect multiple MCP servers for a powerful agent:
+
+```typescript
+import GroqRAG from 'groq-rag';
+
+const client = new GroqRAG();
+
+// Connect to multiple MCP servers
+await client.mcp.addServer({
+  name: 'filesystem',
+  transport: 'stdio',
+  command: 'npx',
+  args: ['-y', '@modelcontextprotocol/server-filesystem', './project'],
+});
+
+await client.mcp.addServer({
+  name: 'github',
+  transport: 'stdio',
+  command: 'npx',
+  args: ['-y', '@modelcontextprotocol/server-github'],
+  env: { GITHUB_TOKEN: process.env.GITHUB_TOKEN },
+});
+
+// Create agent with all tools
+const agent = await client.createAgentWithBuiltins(
+  {
+    model: 'llama-3.3-70b-versatile',
+    systemPrompt: `You have access to:
+    - Local filesystem (read/write files)
+    - GitHub (repos, issues, PRs)
+    - Web search and URL fetching
+    Use these tools to help with development tasks.`,
+  },
+  { includeMCP: true }
+);
+
+// Run complex tasks
+const result = await agent.run(
+  'Read the README.md file and check if there are any open issues in the GitHub repo'
+);
+
+await client.mcp.disconnectAll();
+```
+
+---
+
+### Standalone MCP Client
+
+Use MCP without the full GroqRAG client:
+
+```typescript
+import { createMCPClient, ToolExecutor } from 'groq-rag';
+
+// Create MCP client
+const mcp = createMCPClient({
+  name: 'sqlite',
+  transport: 'stdio',
+  command: 'npx',
+  args: ['-y', '@modelcontextprotocol/server-sqlite', './database.db'],
+});
+
+await mcp.connect();
+
+// Get tools as ToolDefinitions
+const tools = mcp.getToolsAsDefinitions();
+console.log('Available:', tools.map(t => t.name));
+
+// Add to a ToolExecutor
+const executor = new ToolExecutor();
+executor.registerMCPTools(mcp);
+
+// Execute MCP tools directly
+const result = await executor.execute('sqlite__query', {
+  query: 'SELECT * FROM users LIMIT 10',
+});
+
+await mcp.disconnect();
+```
+
+---
+
+### Dynamic Tool Discovery
+
+Discover and use tools dynamically:
+
+```typescript
+const client = new GroqRAG();
+
+// Connect to server
+await client.mcp.addServer({
+  name: 'custom-tools',
+  transport: 'http',
+  url: 'http://localhost:3001/mcp',
+});
+
+// List available tools
+const tools = await client.mcp.getAllTools();
+console.log('Discovered tools:');
+for (const tool of tools) {
+  console.log(`  ${tool.name}: ${tool.description}`);
+}
+
+// Use specific tools based on task
+const hasFileTools = tools.some(t => t.name.includes('file'));
+if (hasFileTools) {
+  // Create agent with file capabilities
+  const agent = await client.createAgentWithBuiltins(
+    { systemPrompt: 'You can read and write files.' },
+    { includeMCP: true }
+  );
+}
+```
+
+---
+
+### Error Handling for MCP
+
+Handle MCP connection and tool errors:
+
+```typescript
+import { createMCPClient } from 'groq-rag';
+
+async function connectWithRetry(config, maxRetries = 3) {
+  const mcp = createMCPClient(config);
+
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      await mcp.connect();
+      console.log(`Connected to ${config.name}`);
+      return mcp;
+    } catch (error) {
+      console.error(`Attempt ${i + 1} failed:`, error.message);
+      if (i === maxRetries - 1) throw error;
+      await new Promise(r => setTimeout(r, 1000 * (i + 1))); // Backoff
+    }
+  }
+}
+
+// Handle tool call errors
+async function safeToolCall(mcp, name, args) {
+  try {
+    const result = await mcp.callTool(name, args);
+    if (result.isError) {
+      const errorText = result.content
+        .filter(c => c.type === 'text')
+        .map(c => c.text)
+        .join('');
+      console.error('Tool error:', errorText);
+      return null;
+    }
+    return result;
+  } catch (error) {
+    console.error('Tool call failed:', error.message);
+    return null;
+  }
 }
 ```
 

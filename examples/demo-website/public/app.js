@@ -9,8 +9,28 @@ const TOOL_ICONS = {
   fetch_url: '📄',
   rag_query: '📚',
   calculator: '🧮',
-  get_datetime: '🕐'
+  get_datetime: '🕐',
+  mcp: '🔌'  // Default MCP tool icon
 };
+
+// Get icon for tool (handles MCP namespaced tools like "serverName__toolName")
+function getToolIcon(toolName) {
+  if (TOOL_ICONS[toolName]) return TOOL_ICONS[toolName];
+  // MCP tools are namespaced as serverName__toolName
+  if (toolName && toolName.includes('__')) return TOOL_ICONS.mcp;
+  return '🔧';
+}
+
+// Format tool name for display (handles MCP namespaced tools)
+function formatToolName(toolName) {
+  if (!toolName) return 'unknown';
+  // MCP tools: serverName__toolName -> toolName (serverName)
+  if (toolName.includes('__')) {
+    const [server, tool] = toolName.split('__');
+    return `${tool} (${server})`;
+  }
+  return toolName;
+}
 
 // DOM Elements
 const $ = id => document.getElementById(id);
@@ -273,8 +293,8 @@ function addMessage(role, content, tools = []) {
       <div class="tool-calls">
         ${tools.map(t => `
           <div class="tool-call">
-            <span class="tool-call-icon">${TOOL_ICONS[t.name] || '🔧'}</span>
-            <span class="tool-call-name">${t.name}</span>
+            <span class="tool-call-icon">${getToolIcon(t.name)}</span>
+            <span class="tool-call-name">${formatToolName(t.name)}</span>
           </div>
         `).join('')}
       </div>

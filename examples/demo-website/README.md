@@ -14,10 +14,15 @@ A comprehensive demo showcasing all features of the groq-rag library.
   - Web search with DuckDuckGo
   - Chat with search results
   - Chat about URL content
+- **MCP Integration**
+  - Connect to MCP servers (stdio/http)
+  - Discover and use external tools
+  - Agent with MCP tools
 - **AI Agents**
   - ReAct-style agent execution
   - Streaming agent output
   - Tool usage visualization
+  - Support for MCP tools
 - **Built-in Tools**
   - Calculator
   - Date/Time
@@ -66,6 +71,14 @@ npm start
 ### Agent
 - `POST /api/agent/run` - Run agent task
 - `GET /api/agent/stream` - Stream agent execution
+- `POST /api/agent/run-with-mcp` - Run agent with MCP tools
+
+### MCP (Model Context Protocol)
+- `GET /api/mcp/servers` - List connected MCP servers
+- `POST /api/mcp/add` - Connect to MCP server
+- `POST /api/mcp/remove` - Disconnect from server
+- `GET /api/mcp/tools` - List all MCP tools
+- `POST /api/mcp/disconnect-all` - Disconnect all servers
 
 ### Tools
 - `POST /api/tools/calculator` - Calculate expression
@@ -78,8 +91,9 @@ The demo features a dark-themed UI with tabs for each feature category:
 1. **Chat Tab** - Basic LLM chat with model selection and streaming
 2. **RAG Tab** - Document management and semantic search
 3. **Web Tab** - URL fetching and web search
-4. **Agent Tab** - AI agent with tool visualization
-5. **Tools Tab** - Direct tool testing
+4. **MCP Tab** - Connect to MCP servers and manage external tools
+5. **Agent Tab** - AI agent with tool visualization (supports MCP tools)
+6. **Tools Tab** - Direct tool testing
 
 ## Tech Stack
 

@@ -317,6 +317,124 @@ app.post('/api/tools/datetime', async (req, res) => {
   }
 });
 
+// MCP - List Servers
+app.get('/api/mcp/servers', async (req, res) => {
+  try {
+    const servers = client.mcp.getServers();
+    res.json({
+      success: true,
+      servers: servers.map(s => ({
+        name: s.name,
+        state: s.getState(),
+        tools: s.getTools().map(t => t.name),
+      })),
+      count: client.mcp.getServerCount(),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// MCP - Add Server
+app.post('/api/mcp/add', async (req, res) => {
+  try {
+    const { name, transport, command, args, url, env } = req.body;
+
+    if (!name || !transport) {
+      return res.status(400).json({ success: false, error: 'name and transport required' });
+    }
+
+    const config = {
+      name,
+      transport,
+      command,
+      args,
+      url,
+      env,
+      timeout: 30000,
+    };
+
+    const mcpClient = await client.mcp.addServer(config);
+    const tools = mcpClient.getTools();
+
+    res.json({
+      success: true,
+      message: `Connected to ${name}`,
+      serverInfo: mcpClient.getServerInfo()?.serverInfo,
+      tools: tools.map(t => ({ name: t.name, description: t.description })),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// MCP - Remove Server
+app.post('/api/mcp/remove', async (req, res) => {
+  try {
+    const { name } = req.body;
+    await client.mcp.removeServer(name);
+    res.json({ success: true, message: `Disconnected from ${name}` });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// MCP - Get All Tools
+app.get('/api/mcp/tools', async (req, res) => {
+  try {
+    const tools = await client.mcp.getAllTools();
+    res.json({
+      success: true,
+      tools: tools.map(t => ({
+        name: t.name,
+        description: t.description,
+        parameters: t.parameters,
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// MCP - Disconnect All
+app.post('/api/mcp/disconnect-all', async (req, res) => {
+  try {
+    await client.mcp.disconnectAll();
+    res.json({ success: true, message: 'All MCP servers disconnected' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Agent with MCP - Run
+app.post('/api/agent/run-with-mcp', async (req, res) => {
+  try {
+    const { task, model = 'llama-3.3-70b-versatile' } = req.body;
+
+    const agent = await client.createAgentWithBuiltins(
+      {
+        model,
+        maxIterations: 5,
+      },
+      { includeMCP: true }
+    );
+
+    const result = await agent.run(task);
+    res.json({
+      success: true,
+      output: result.output,
+      iterations: result.iterations,
+      toolCalls: result.toolCalls.map(t => ({
+        name: t.name,
+        args: t.args,
+        result: typeof t.result === 'string' ? t.result.slice(0, 500) : t.result,
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`

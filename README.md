@@ -52,6 +52,7 @@ groq-rag is built on top of the official [Groq TypeScript SDK](https://github.co
   - [Chat Module](#chat-module)
   - [Agent System](#agent-system)
   - [Tool System](#tool-system)
+  - [MCP Integration](#mcp-integration)
 - [Configuration](#configuration)
   - [Vector Stores](#vector-stores)
   - [Embedding Providers](#embedding-providers)
@@ -74,6 +75,7 @@ groq-rag is built on top of the official [Groq TypeScript SDK](https://github.co
 | **Web Search** | DuckDuckGo (free), Brave Search, and Serper (Google) integration |
 | **Agent System** | ReAct-style autonomous agents with tool use, memory, and streaming |
 | **Tool Framework** | Extensible tool system with built-in and custom tools |
+| **MCP Integration** | Connect to Model Context Protocol servers for external tool access |
 | **Content Limiting** | Optional token/character limits to control API costs |
 | **TypeScript** | Full type safety with comprehensive IntelliSense support |
 | **Zero Config** | Works out of the box with sensible defaults |
@@ -636,6 +638,111 @@ executor.register(anotherTool);
 const result = await executor.execute('my_tool', { input: 'hello' });
 ```
 
+---
+
+### MCP Integration
+
+Connect to [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) servers to use external tools from the MCP ecosystem.
+
+#### Adding MCP Servers
+
+```typescript
+const client = new GroqRAG();
+
+// Add an MCP server (stdio transport)
+await client.mcp.addServer({
+  name: 'filesystem',
+  transport: 'stdio',
+  command: 'npx',
+  args: ['-y', '@modelcontextprotocol/server-filesystem', './data'],
+});
+
+// Add another MCP server (e.g., GitHub)
+await client.mcp.addServer({
+  name: 'github',
+  transport: 'stdio',
+  command: 'npx',
+  args: ['-y', '@modelcontextprotocol/server-github'],
+  env: { GITHUB_TOKEN: process.env.GITHUB_TOKEN },
+});
+```
+
+#### Using MCP Tools with Agents
+
+```typescript
+// Create agent with built-in + MCP tools
+const agent = await client.createAgentWithBuiltins(
+  { model: 'llama-3.3-70b-versatile', verbose: true },
+  { includeMCP: true }
+);
+
+// Agent can now use tools from all connected MCP servers
+const result = await agent.run('List files in the data directory');
+
+// Cleanup when done
+await client.mcp.disconnectAll();
+```
+
+#### MCP Server Configuration
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `name` | string | Unique name for the server |
+| `transport` | 'stdio' \| 'http' | Transport protocol |
+| `command` | string | Command to run (stdio) |
+| `args` | string[] | Command arguments (stdio) |
+| `env` | object | Environment variables (stdio) |
+| `url` | string | Server URL (http) |
+| `timeout` | number | Connection timeout (ms) |
+
+#### Standalone MCP Client
+
+```typescript
+import { createMCPClient } from 'groq-rag';
+
+// Create and connect to an MCP server
+const mcpClient = createMCPClient({
+  name: 'filesystem',
+  transport: 'stdio',
+  command: 'npx',
+  args: ['-y', '@modelcontextprotocol/server-filesystem', '.'],
+});
+
+await mcpClient.connect();
+
+// Get tools as ToolDefinitions for use with any agent
+const tools = mcpClient.getToolsAsDefinitions();
+console.log('Available tools:', tools.map(t => t.name));
+
+// Call a tool directly
+const result = await mcpClient.callTool('read_file', { path: './README.md' });
+
+await mcpClient.disconnect();
+```
+
+#### MCP Module Methods
+
+| Method | Description |
+|--------|-------------|
+| `client.mcp.addServer(config)` | Connect to an MCP server |
+| `client.mcp.removeServer(name)` | Disconnect from a server |
+| `client.mcp.getServer(name)` | Get a specific MCP client |
+| `client.mcp.getServers()` | List all connected clients |
+| `client.mcp.getAllTools()` | Get all tools from all servers |
+| `client.mcp.disconnectAll()` | Disconnect from all servers |
+
+#### Popular MCP Servers
+
+| Server | Package | Description |
+|--------|---------|-------------|
+| Filesystem | `@modelcontextprotocol/server-filesystem` | Read/write local files |
+| GitHub | `@modelcontextprotocol/server-github` | GitHub API access |
+| Brave Search | `@modelcontextprotocol/server-brave-search` | Web search |
+| SQLite | `@modelcontextprotocol/server-sqlite` | SQLite database |
+| Memory | `@modelcontextprotocol/server-memory` | Persistent memory |
+
+> See [MCP Servers](https://github.com/modelcontextprotocol/servers) for more available servers.
+
 ## Configuration
 
 ### Vector Stores
@@ -891,6 +998,7 @@ Complete examples in the [examples/](./examples) directory:
 | `url-fetch.ts` | URL fetching and summarization |
 | `agent.ts` | Agent with tools |
 | `streaming-agent.ts` | Streaming agent execution |
+| `mcp-tools.ts` | **MCP server integration** |
 | `full-chatbot.ts` | **Full-featured interactive CLI chatbot** |
 
 ### Running the Full Chatbot
@@ -940,6 +1048,10 @@ groq-rag/
 │   ├── tools/
 │   │   ├── executor.ts   # Tool execution engine
 │   │   └── builtins.ts   # Built-in tools
+│   ├── mcp/
+│   │   ├── client.ts     # MCP client implementation
+│   │   ├── adapter.ts    # MCP to ToolDefinition conversion
+│   │   └── transports/   # Stdio and HTTP transports
 │   ├── agents/
 │   │   └── agent.ts      # ReAct agent implementation
 │   └── utils/
@@ -1023,6 +1135,17 @@ npm run benchmark
 ```
 
 ## Changelog
+
+### v0.1.6
+
+- **New Feature: MCP Integration** - Connect to Model Context Protocol servers
+  - `client.mcp.addServer()` - Connect to MCP servers (stdio/http)
+  - `client.mcp.getAllTools()` - Get tools from connected servers
+  - `createAgentWithBuiltins({ includeMCP: true })` - Include MCP tools in agents
+  - Support for `@modelcontextprotocol/server-*` packages
+  - Standalone `createMCPClient()` for direct MCP usage
+- **ToolExecutor Enhancement** - Added `registerMCPTools()` and `unregisterMCPTools()`
+- **Tests** - Added MCP client and adapter tests
 
 ### v0.1.4
 

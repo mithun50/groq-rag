@@ -1,6 +1,6 @@
-# Test Report - groq-rag v0.1.4
+# Test Report - groq-rag v0.1.6
 
-**Date:** 2025-01-27
+**Date:** 2025-01-30
 **Status:** All Tests Passing
 **Groq SDK Compatibility:** 100%
 
@@ -10,9 +10,9 @@
 
 | Metric | Value |
 |--------|-------|
-| Test Files | 8 passed |
-| Total Tests | 127 passed |
-| Duration | 3.09s |
+| Test Files | 12 passed |
+| Total Tests | 166 passed |
+| Duration | ~4s |
 | Build | Success |
 | TypeCheck | Success |
 
@@ -30,36 +30,60 @@
 | `tests/web/search.test.ts` | 12 | ✓ Pass |
 | `tests/web/fetcher.test.ts` | 9 | ✓ Pass |
 | `tests/client.test.ts` | 22 | ✓ Pass |
+| `tests/mcp/adapter.test.ts` | 10 | ✓ Pass |
+| `tests/mcp/client.test.ts` | 7 | ✓ Pass |
+| `tests/mcp/transports.test.ts` | 13 | ✓ Pass |
+| `tests/mcp/integration.test.ts` | 9 | ✓ Pass |
 
 ---
 
-## New Feature Tests (v0.1.4)
+## New Feature Tests (v0.1.6)
 
-### Content Limiting Feature
+### MCP Integration Feature
 
-#### URL Fetch Limiting - VERIFIED WORKING
+#### MCP Adapter - VERIFIED WORKING
 
-| Test | Input | Expected | Actual | Status |
-|------|-------|----------|--------|--------|
-| No limit | - | Full content | 3594 chars | ✓ |
-| `maxContentLength=500` | 500 | 500 chars | 500 chars | ✓ |
-| `maxContentLength=200` | 200 | 200 chars | 200 chars | ✓ |
-| `maxContentLength=100` | 100 | 100 chars | 100 chars | ✓ |
-| `maxContentLength=50` | 50 | 50 chars | 50 chars | ✓ |
-| `maxTokens=100` | ~400 | 400 chars | 400 chars | ✓ |
-| `maxTokens=50` | ~200 | 200 chars | 200 chars | ✓ |
-| `maxTokens=25` | ~100 | 100 chars | 100 chars | ✓ |
+| Test | Description | Status |
+|------|-------------|--------|
+| Tool conversion | Convert MCP tool to ToolDefinition | ✓ |
+| Error handling | Handle tool execution errors | ✓ |
+| JSON parsing | Parse JSON responses from MCP | ✓ |
+| Multi-content | Handle multiple content items | ✓ |
+| Batch conversion | Convert multiple tools at once | ✓ |
+| Name extraction | Extract server/tool from namespaced name | ✓ |
+| MCP tool identification | Identify MCP vs regular tools | ✓ |
 
-#### Web Search Limiting - VERIFIED WORKING
+#### MCP Client - VERIFIED WORKING
 
-| Test | Input | Expected | Actual | Status |
-|------|-------|----------|--------|--------|
-| No limit | 5 results | Full snippets | 797 chars | ✓ |
-| `maxSnippetLength=60` | 60 chars/snippet | Truncated | 60 chars each | ✓ |
-| `maxTotalContentLength=400` | 400 total | ≤400 chars | 400 chars | ✓ |
-| Combined limits | Both | Respects both | ✓ | ✓ |
+| Test | Description | Status |
+|------|-------------|--------|
+| Client creation | Create with stdio/http config | ✓ |
+| Initial state | Correct disconnected state | ✓ |
+| Namespaced tools | Return properly namespaced tool names | ✓ |
+| Tool ownership | Check if tool belongs to client | ✓ |
+| Error handling | Throw on missing command/url | ✓ |
 
-**Note:** Web search tests may show intermittent failures due to DuckDuckGo rate limiting. The code logic is verified working with proper delays between requests.
+#### MCP Transports - VERIFIED WORKING
+
+| Test | Description | Status |
+|------|-------------|--------|
+| StdioTransport creation | Create with options | ✓ |
+| HttpTransport creation | Create with options | ✓ |
+| Handler setup | Notification/error/disconnect handlers | ✓ |
+| HTTP requests | Send via POST with headers | ✓ |
+| Error handling | Handle HTTP errors | ✓ |
+| Authorization | Include API key in headers | ✓ |
+
+#### MCP Integration - VERIFIED WORKING
+
+| Test | Description | Status |
+|------|-------------|--------|
+| Register MCP tools | Add tools from MCP client to executor | ✓ |
+| Unregister MCP tools | Remove tools when client disconnects | ✓ |
+| Multiple clients | Handle multiple MCP servers | ✓ |
+| Execute MCP tools | Run MCP tools through executor | ✓ |
+| Mix with regular | Combine MCP + regular tools | ✓ |
+| API format | Get tools in Groq API format | ✓ |
 
 ---
 
@@ -82,6 +106,14 @@
 - Tool executor operations
 - Built-in tools (calculator, datetime, web_search, fetch_url)
 - Tool registration and execution
+- MCP tool registration/unregistration
+
+### MCP Module (39 tests)
+- MCP client initialization and state
+- Transport implementations (stdio, http)
+- Tool adapter conversion
+- Integration with ToolExecutor
+- Namespacing and tool identification
 
 ### Utilities (25 tests)
 - Helper functions
@@ -91,17 +123,18 @@
 
 ### Client (22 tests)
 - GroqRAG client initialization
-- Module access (chat, web, rag)
+- Module access (chat, web, rag, mcp)
 - Agent creation
+- Agent with MCP tools
 
 ---
 
 ## Build Output
 
 ```
-dist/index.js    57.35 KB (ESM)
-dist/index.cjs   60.46 KB (CommonJS)
-dist/index.d.ts  21.93 KB (TypeScript declarations)
+dist/index.js    74.67 KB (ESM)
+dist/index.cjs   78.17 KB (CommonJS)
+dist/index.d.ts  33.44 KB (TypeScript declarations)
 ```
 
 ---
@@ -112,6 +145,8 @@ dist/index.d.ts  21.93 KB (TypeScript declarations)
 
 2. **DuckDuckGo rate limiting** - Web search tests may fail intermittently due to DuckDuckGo anti-scraping measures. Use Brave Search or Serper API for production.
 
+3. **MCP process spawning** - StdioTransport connect/disconnect tests require actual process spawning which is difficult to mock. Basic construction and handler tests are included instead.
+
 ---
 
 ## Recommendations
@@ -119,6 +154,7 @@ dist/index.d.ts  21.93 KB (TypeScript declarations)
 - For production web search, use Brave Search or Serper API
 - Content limiting is optional - omit options for full content
 - Use `maxTokens` for approximate token control (~4 chars/token)
+- Cleanup MCP connections with `client.mcp.disconnectAll()` when done
 
 ---
 
@@ -132,7 +168,7 @@ npm test
 npm run test:coverage
 
 # Run specific test file
-npx vitest run tests/web/fetcher.test.ts
+npx vitest run tests/mcp/adapter.test.ts
 
 # Watch mode
 npm run test:watch

@@ -167,6 +167,73 @@ for await (const event of agent.runStream('Explain quantum computing')) {
 
 ---
 
+### mcp-tools.ts
+
+MCP (Model Context Protocol) server integration example. Demonstrates:
+- Connecting to MCP servers via stdio transport
+- Using MCP tools with agents
+- Standalone MCP client usage
+- Managing multiple MCP servers
+
+```typescript
+import GroqRAG, { createMCPClient, ToolExecutor } from 'groq-rag';
+
+const client = new GroqRAG();
+
+// Connect to MCP servers
+await client.mcp.addServer({
+  name: 'filesystem',
+  transport: 'stdio',
+  command: 'npx',
+  args: ['-y', '@modelcontextprotocol/server-filesystem', '.'],
+  timeout: 15000,
+});
+
+// List discovered tools
+const tools = await client.mcp.getAllTools();
+console.log('MCP tools:', tools.map(t => t.name));
+
+// Create agent with MCP tools included
+const agent = await client.createAgentWithBuiltins(
+  { model: 'llama-3.3-70b-versatile', verbose: true },
+  { includeMCP: true }
+);
+
+// Run tasks using MCP tools
+const result = await agent.run('List the files in the current directory');
+console.log(result.output);
+
+// Cleanup
+await client.mcp.disconnectAll();
+```
+
+**Standalone MCP Client:**
+
+```typescript
+import { createMCPClient } from 'groq-rag';
+
+const mcpClient = createMCPClient({
+  name: 'filesystem',
+  transport: 'stdio',
+  command: 'npx',
+  args: ['-y', '@modelcontextprotocol/server-filesystem', '.'],
+});
+
+await mcpClient.connect();
+const tools = mcpClient.getToolsAsDefinitions();
+const result = await mcpClient.callTool('read_file', { path: './README.md' });
+await mcpClient.disconnect();
+```
+
+**Run:** `npx tsx examples/mcp-tools.ts`
+
+**Prerequisites:** Install MCP server packages:
+```bash
+npm install -g @modelcontextprotocol/server-filesystem
+```
+
+---
+
 ### full-chatbot.ts
 
 Full-featured interactive CLI chatbot with all capabilities.

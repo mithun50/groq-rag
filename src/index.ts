@@ -55,6 +55,23 @@ export {
 // Agents module
 export { Agent, createAgent } from './agents';
 
+// MCP module
+export {
+  MCPClient,
+  createMCPClient,
+  MCPServerConfig,
+  MCPTool,
+  MCPToolCallResult,
+  MCPContent,
+  MCPClientState,
+  StdioTransport,
+  HttpTransport,
+  createStdioTransport,
+  createHttpTransport,
+  mcpToolToDefinition,
+  mcpToolsToDefinitions,
+} from './mcp';
+
 // Utilities
 export {
   TextChunker,

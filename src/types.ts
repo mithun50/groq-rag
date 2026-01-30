@@ -266,3 +266,9 @@ export interface EmbeddingProvider {
   embedBatch(texts: string[]): Promise<EmbeddingResult[]>;
   dimensions: number;
 }
+
+// ============================================
+// MCP Types (re-exported from mcp module)
+// ============================================
+
+export type { MCPServerConfig } from './mcp/types';

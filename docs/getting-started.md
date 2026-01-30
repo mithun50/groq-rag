@@ -151,6 +151,34 @@ console.log('Tools used:', result.toolCalls.map(t => t.name));
 
 ---
 
+### MCP Tools (External)
+
+Connect to [MCP servers](https://modelcontextprotocol.io/) for additional tools.
+
+```typescript
+// Add an MCP server
+await client.mcp.addServer({
+  name: 'filesystem',
+  transport: 'stdio',
+  command: 'npx',
+  args: ['-y', '@modelcontextprotocol/server-filesystem', './data'],
+});
+
+// Create agent with MCP tools included
+const agent = await client.createAgentWithBuiltins(
+  { model: 'llama-3.3-70b-versatile' },
+  { includeMCP: true }
+);
+
+// Agent can now use tools from MCP servers
+const result = await agent.run('List files in the data directory');
+
+// Cleanup
+await client.mcp.disconnectAll();
+```
+
+---
+
 ## Common Patterns
 
 ### Pattern 1: Document Q&A Bot

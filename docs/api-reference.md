@@ -10,6 +10,7 @@ Complete API documentation for groq-rag.
 | Chat | `client.chat` | `withRAG()`, `withWebSearch()`, `withUrl()` |
 | RAG | `client.rag` | `addDocument()`, `query()`, `getContext()` |
 | Web | `client.web` | `fetch()`, `search()`, `fetchMany()` |
+| MCP | `client.mcp` | `addServer()`, `getAllTools()`, `disconnectAll()` |
 | Agent | `agent` | `run()`, `runStream()`, `addTool()` |
 
 ---
@@ -102,19 +103,150 @@ const agent = client.createAgent({
 
 > **Supported models:** All [Groq chat models](https://console.groq.com/docs/models) work with agents.
 
-### client.createAgentWithBuiltins(config)
+### client.createAgentWithBuiltins(config, options?)
 
-Create agent with all built-in tools (plus rag_query if RAG is initialized).
+Create agent with all built-in tools (plus rag_query if RAG is initialized, plus MCP tools if requested).
 
 ```typescript
-const agent = await client.createAgentWithBuiltins({
-  model?: string,
-  systemPrompt?: string,
-  verbose?: boolean,
-});
+const agent = await client.createAgentWithBuiltins(
+  {
+    model?: string,
+    systemPrompt?: string,
+    verbose?: boolean,
+  },
+  {
+    includeMCP?: boolean,  // Include tools from connected MCP servers
+  }
+);
 
 // Built-in tools: web_search, fetch_url, calculator, get_datetime
 // + rag_query (only if client.initRAG() was called first)
+// + MCP tools (only if includeMCP: true and servers are connected)
+```
+
+---
+
+## MCP Module
+
+Access: `client.mcp`
+
+Connect to [Model Context Protocol](https://modelcontextprotocol.io/) servers for external tools.
+
+### mcp.addServer(config)
+
+Connect to an MCP server.
+
+```typescript
+const mcpClient = await client.mcp.addServer({
+  name: string,              // Unique server name
+  transport: 'stdio' | 'http',
+  // For stdio transport:
+  command?: string,          // Command to run
+  args?: string[],           // Command arguments
+  env?: Record<string, string>, // Environment variables
+  // For http transport:
+  url?: string,              // Server URL
+  // Common options:
+  timeout?: number,          // Connection timeout (ms)
+});
+
+// Returns: MCPClient instance
+```
+
+### mcp.removeServer(name)
+
+Disconnect from a server.
+
+```typescript
+await client.mcp.removeServer('github');
+```
+
+### mcp.getServer(name)
+
+Get a specific MCP client.
+
+```typescript
+const github = client.mcp.getServer('github');
+if (github) {
+  const tools = github.getToolsAsDefinitions();
+}
+```
+
+### mcp.getServers()
+
+Get all connected MCP clients.
+
+```typescript
+const servers = client.mcp.getServers();
+// Returns: MCPClient[]
+```
+
+### mcp.getAllTools()
+
+Get all tools from all connected servers.
+
+```typescript
+const tools = await client.mcp.getAllTools();
+// Returns: ToolDefinition[]
+```
+
+### mcp.disconnectAll()
+
+Disconnect from all servers.
+
+```typescript
+await client.mcp.disconnectAll();
+```
+
+### mcp.hasServers()
+
+Check if any servers are connected.
+
+```typescript
+if (client.mcp.hasServers()) {
+  // ...
+}
+```
+
+### mcp.getServerCount()
+
+Get number of connected servers.
+
+```typescript
+const count = client.mcp.getServerCount();
+```
+
+---
+
+## Standalone MCP Client
+
+For advanced usage without the GroqRAG client.
+
+```typescript
+import { createMCPClient, MCPClient } from 'groq-rag';
+
+const client = createMCPClient({
+  name: 'filesystem',
+  transport: 'stdio',
+  command: 'npx',
+  args: ['-y', '@modelcontextprotocol/server-filesystem', './data'],
+});
+
+await client.connect();
+
+// Get tools
+const tools = client.getToolsAsDefinitions();
+
+// Call a tool directly
+const result = await client.callTool('read_file', { path: './README.md' });
+
+// Get server info
+const info = client.getServerInfo();
+
+// Check state
+const state = client.getState(); // 'disconnected' | 'connecting' | 'connected' | 'error'
+
+await client.disconnect();
 ```
 
 ---
@@ -555,5 +687,33 @@ interface ChunkingOptions {
   chunkSize?: number;
   chunkOverlap?: number;
   separators?: string[];
+}
+
+// MCP Types
+interface MCPServerConfig {
+  name: string;
+  transport: 'stdio' | 'http';
+  command?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  url?: string;
+  timeout?: number;
+}
+
+type MCPClientState = 'disconnected' | 'connecting' | 'connected' | 'error';
+
+interface MCPTool {
+  name: string;
+  description?: string;
+  inputSchema: {
+    type: 'object';
+    properties?: Record<string, unknown>;
+    required?: string[];
+  };
+}
+
+interface MCPToolCallResult {
+  content: Array<{ type: string; text?: string }>;
+  isError?: boolean;
 }
 ```

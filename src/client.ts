@@ -27,6 +27,7 @@ import {
   VectorStoreConfig,
   ChunkingOptions,
 } from './types';
+import { MCPClient, createMCPClient, MCPServerConfig } from './mcp';
 import { Retriever, createRetriever } from './rag/retriever';
 import { createVectorStore } from './rag/vectorStore';
 import { createEmbeddingProvider } from './rag/embeddings';
@@ -69,6 +70,7 @@ export class GroqRAG {
   public chat: ChatWithRAG;
   public web: WebModule;
   public rag: RAGModule;
+  public mcp: MCPModule;
 
   constructor(config: GroqRAGConfig = {}) {
     this.config = config;
@@ -90,6 +92,7 @@ export class GroqRAG {
     this.chat = new ChatWithRAG(this);
     this.web = new WebModule(this);
     this.rag = new RAGModule(this);
+    this.mcp = new MCPModule();
   }
 
   /**
@@ -155,14 +158,25 @@ export class GroqRAG {
 
   /**
    * Create an agent with built-in tools (web search, fetch, RAG)
+   * @param config - Agent configuration
+   * @param options - Additional options for agent creation
    */
-  async createAgentWithBuiltins(config?: AgentConfig): Promise<Agent> {
+  async createAgentWithBuiltins(
+    config?: AgentConfig,
+    options?: { includeMCP?: boolean }
+  ): Promise<Agent> {
     const retriever = await this.getRetriever();
     const tools: ToolDefinition[] = [
       ...getBuiltinTools(),
       createRAGQueryTool(retriever),
       ...(config?.tools || []),
     ];
+
+    // Include MCP tools if requested
+    if (options?.includeMCP) {
+      const mcpTools = await this.mcp.getAllTools();
+      tools.push(...mcpTools);
+    }
 
     return createAgent(this.groq, { ...config, tools });
   }
@@ -463,5 +477,91 @@ class RAGModule {
   async count(): Promise<number> {
     const retriever = await this.parent.getRetriever();
     return retriever.count();
+  }
+}
+
+/**
+ * MCP module for managing MCP server connections
+ */
+class MCPModule {
+  private clients: Map<string, MCPClient> = new Map();
+
+  /**
+   * Add and connect to an MCP server
+   */
+  async addServer(config: MCPServerConfig): Promise<MCPClient> {
+    // Check if already exists
+    if (this.clients.has(config.name)) {
+      throw new Error(`MCP server "${config.name}" already exists`);
+    }
+
+    const client = createMCPClient(config);
+    await client.connect();
+    this.clients.set(config.name, client);
+
+    return client;
+  }
+
+  /**
+   * Remove and disconnect from an MCP server
+   */
+  async removeServer(name: string): Promise<void> {
+    const client = this.clients.get(name);
+    if (!client) {
+      throw new Error(`MCP server "${name}" not found`);
+    }
+
+    await client.disconnect();
+    this.clients.delete(name);
+  }
+
+  /**
+   * Get a specific MCP client
+   */
+  getServer(name: string): MCPClient | undefined {
+    return this.clients.get(name);
+  }
+
+  /**
+   * Get all connected MCP clients
+   */
+  getServers(): MCPClient[] {
+    return Array.from(this.clients.values());
+  }
+
+  /**
+   * Get all tools from all connected MCP servers
+   */
+  async getAllTools(): Promise<ToolDefinition[]> {
+    const tools: ToolDefinition[] = [];
+    for (const client of this.clients.values()) {
+      tools.push(...client.getToolsAsDefinitions());
+    }
+    return tools;
+  }
+
+  /**
+   * Disconnect from all MCP servers
+   */
+  async disconnectAll(): Promise<void> {
+    const disconnectPromises = Array.from(this.clients.values()).map(client =>
+      client.disconnect()
+    );
+    await Promise.all(disconnectPromises);
+    this.clients.clear();
+  }
+
+  /**
+   * Check if any MCP servers are connected
+   */
+  hasServers(): boolean {
+    return this.clients.size > 0;
+  }
+
+  /**
+   * Get server count
+   */
+  getServerCount(): number {
+    return this.clients.size;
   }
 }

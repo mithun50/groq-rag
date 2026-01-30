@@ -1,11 +1,14 @@
 import Groq from 'groq-sdk';
 import { ToolDefinition, ToolResult } from '../types';
+import type { MCPClient } from '../mcp/client';
+import { isMCPTool } from '../mcp/adapter';
 
 /**
  * Tool executor - manages and executes tools
  */
 export class ToolExecutor {
   private tools: Map<string, ToolDefinition> = new Map();
+  private mcpClients: Map<string, MCPClient> = new Map();
 
   constructor(tools: ToolDefinition[] = []) {
     for (const tool of tools) {
@@ -25,6 +28,37 @@ export class ToolExecutor {
    */
   unregister(name: string): boolean {
     return this.tools.delete(name);
+  }
+
+  /**
+   * Register tools from an MCP client
+   */
+  registerMCPTools(client: MCPClient): void {
+    const tools = client.getToolsAsDefinitions();
+    for (const tool of tools) {
+      this.register(tool);
+    }
+    this.mcpClients.set(client.name, client);
+  }
+
+  /**
+   * Unregister tools from an MCP client
+   */
+  unregisterMCPTools(client: MCPClient): void {
+    // Remove all tools belonging to this client
+    for (const name of this.tools.keys()) {
+      if (isMCPTool(name, client.name)) {
+        this.tools.delete(name);
+      }
+    }
+    this.mcpClients.delete(client.name);
+  }
+
+  /**
+   * Get all registered MCP clients
+   */
+  getMCPClients(): MCPClient[] {
+    return Array.from(this.mcpClients.values());
   }
 
   /**
