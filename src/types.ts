@@ -194,6 +194,7 @@ export interface ToolDefinition {
 
 export interface ToolResult {
   name: string;
+  args?: Record<string, unknown>;
   result: unknown;
   error?: string;
   executionTime?: number;

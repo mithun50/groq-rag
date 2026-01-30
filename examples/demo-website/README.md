@@ -5,6 +5,7 @@ A comprehensive demo showcasing all features of the groq-rag library.
 ## Features Demonstrated
 
 - **Basic Chat** - Simple chat completion with streaming support
+- **Vision Support** - Image analysis with vision-capable models (Llama 3.3 70B, Llama 3.2 Vision, Llama 4 Scout)
 - **RAG (Retrieval-Augmented Generation)**
   - Initialize with different chunking strategies
   - Add documents and URLs to knowledge base
@@ -26,6 +27,42 @@ A comprehensive demo showcasing all features of the groq-rag library.
 - **Built-in Tools**
   - Calculator
   - Date/Time
+
+## Using MCP Servers
+
+MCP (Model Context Protocol) allows you to connect external tool servers to extend the agent's capabilities.
+
+### Connecting via UI
+
+1. Click the **🔌 MCP** button in the header
+2. Enter a server name (e.g., "filesystem")
+3. Choose transport type:
+   - **Stdio**: For local command-line servers
+   - **HTTP**: For remote HTTP servers
+4. For Stdio, enter command and arguments:
+   - Command: `npx`
+   - Arguments: `-y, @modelcontextprotocol/server-filesystem, .`
+5. Click "Connect Server"
+
+### Example MCP Servers
+
+```bash
+# Filesystem access
+npx -y @modelcontextprotocol/server-filesystem .
+
+# Memory/notes
+npx -y @modelcontextprotocol/server-memory
+
+# GitHub integration (requires GITHUB_TOKEN)
+GITHUB_TOKEN=xxx npx -y @modelcontextprotocol/server-github
+```
+
+### Using MCP Tools
+
+Once connected, the agent automatically has access to MCP tools. Just ask questions that require those tools:
+- "List the files in the current directory" (filesystem)
+- "Read the contents of package.json" (filesystem)
+- "Remember that the project uses TypeScript" (memory)
 
 ## Setup
 

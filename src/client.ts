@@ -366,6 +366,92 @@ ${fetchResult.markdown || fetchResult.content}`;
       source: fetchResult,
     };
   }
+
+  /**
+   * Chat with vision (images) + tools support
+   * Analyzes images with vision model, then uses agent with tools to provide enhanced response
+   */
+  async withVision(options: {
+    messages: Groq.Chat.ChatCompletionMessageParam[];
+    visionModel?: string;
+    agentModel?: string;
+    useTools?: boolean;
+    includeMCP?: boolean;
+    maxIterations?: number;
+  }): Promise<{
+    content: string;
+    imageAnalysis: string;
+    toolCalls: Array<{ name: string; args: unknown; result: unknown }>;
+  }> {
+    const {
+      messages,
+      visionModel = 'meta-llama/llama-4-scout-17b-16e-instruct',
+      agentModel = 'llama-3.3-70b-versatile',
+      useTools = true,
+      includeMCP = false,
+      maxIterations = 5,
+    } = options;
+
+    // Step 1: Analyze images with vision model
+    const visionResponse = await this.parent.client.chat.completions.create({
+      model: visionModel,
+      messages: [
+        {
+          role: 'system',
+          content: 'Analyze the image(s) provided and describe what you see in detail. If the user asks a question, answer it based on the image. Be specific and thorough.',
+        },
+        ...messages,
+      ],
+    });
+
+    const imageAnalysis = visionResponse.choices[0]?.message?.content || '';
+
+    // If tools disabled, return just the vision analysis
+    if (!useTools) {
+      return {
+        content: imageAnalysis,
+        imageAnalysis,
+        toolCalls: [],
+      };
+    }
+
+    // Step 2: Extract original user question/text
+    const userMessage = messages.find(m => m.role === 'user');
+    let userText = '';
+    if (userMessage && Array.isArray(userMessage.content)) {
+      const textPart = (userMessage.content as Array<{ type: string; text?: string }>).find(
+        c => c.type === 'text'
+      );
+      userText = textPart?.text || '';
+    } else if (userMessage && typeof userMessage.content === 'string') {
+      userText = userMessage.content;
+    }
+
+    // Step 3: Run agent with tools using the combined context
+    const agentTask = userText
+      ? `Based on this image analysis: "${imageAnalysis}"\n\nUser question: ${userText}\n\nUse available tools (web search, calculator, etc.) if needed to provide a complete answer.`
+      : imageAnalysis;
+
+    const agent = await this.parent.createAgentWithBuiltins(
+      {
+        model: agentModel,
+        maxIterations,
+      },
+      { includeMCP }
+    );
+
+    const result = await agent.run(agentTask);
+
+    return {
+      content: result.output,
+      imageAnalysis,
+      toolCalls: result.toolCalls.map(t => ({
+        name: t.name,
+        args: t.args,
+        result: t.result,
+      })),
+    };
+  }
 }
 
 /**

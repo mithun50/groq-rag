@@ -513,6 +513,46 @@ const response = await client.chat.withUrl({
 });
 ```
 
+#### Vision Chat with Tools
+
+Analyze images with vision models and automatically use tools (web search, calculator, MCP) to provide enhanced responses.
+
+```typescript
+const response = await client.chat.withVision({
+  messages: [
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: 'What is this and find more info about it' },
+        { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,...' } }
+      ]
+    }
+  ],
+  visionModel?: string,      // Default: 'meta-llama/llama-4-scout-17b-16e-instruct'
+  agentModel?: string,       // Default: 'llama-3.3-70b-versatile'
+  useTools?: boolean,        // Enable agent tools (default: true)
+  includeMCP?: boolean,      // Include MCP tools (default: false)
+  maxIterations?: number,    // Agent iterations (default: 5)
+});
+
+// Returns:
+// {
+//   content: string,          // Final response with tool-enhanced info
+//   imageAnalysis: string,    // Raw vision model description
+//   toolCalls: Array<{        // Tools that were used
+//     name: string,
+//     args: unknown,
+//     result: unknown,
+//   }>,
+// }
+```
+
+**How it works:**
+1. Vision model analyzes the image(s)
+2. Agent takes the analysis + user question
+3. Agent uses tools (web search, calculator, MCP) if needed
+4. Returns comprehensive answer with sources
+
 ---
 
 ### Agent System
@@ -1135,6 +1175,25 @@ npm run benchmark
 ```
 
 ## Changelog
+
+### v0.2.2
+
+- **New Feature: Vision + Tools** - Analyze images with automatic tool enhancement
+  - `client.chat.withVision()` - Vision analysis with agent tools (web search, calculator, MCP)
+  - Two-step processing: vision model analyzes images, then agent enhances with tools
+  - Supports all vision models (Llama 4 Scout, Llama 4 Maverick)
+  - Returns image analysis, final content, and tool calls used
+- **ToolResult Enhancement** - Added `args` property to track tool input parameters
+- **Demo Website Updates** - All Groq models, vision-only image upload button, MCP integration fixes
+
+### v0.2.1
+
+- Bug fixes and improvements
+
+### v0.2.0
+
+- MCP (Model Context Protocol) support improvements
+- Browser environment support with `dangerouslyAllowBrowser` option
 
 ### v0.1.6
 

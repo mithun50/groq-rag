@@ -102,6 +102,7 @@ export class ToolExecutor {
     if (!tool) {
       return {
         name,
+        args: params,
         result: null,
         error: `Tool "${name}" not found`,
         executionTime: Date.now() - startTime,
@@ -112,12 +113,14 @@ export class ToolExecutor {
       const result = await tool.execute(params);
       return {
         name,
+        args: params,
         result,
         executionTime: Date.now() - startTime,
       };
     } catch (error) {
       return {
         name,
+        args: params,
         result: null,
         error: error instanceof Error ? error.message : String(error),
         executionTime: Date.now() - startTime,

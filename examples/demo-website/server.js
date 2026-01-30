@@ -16,7 +16,7 @@ const client = new GroqRAG({
 // Store for SSE connections
 const sseClients = new Map();
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 app.use(express.static(join(__dirname, 'public')));
 
 // Health check
@@ -32,6 +32,27 @@ app.post('/api/chat', async (req, res) => {
     const response = await client.complete({
       model,
       messages: [{ role: 'user', content: message }],
+    });
+
+    res.json({
+      success: true,
+      content: response.choices[0].message.content,
+      model: response.model,
+      usage: response.usage,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Vision Chat
+app.post('/api/chat/vision', async (req, res) => {
+  try {
+    const { messages, model = 'llama-3.3-70b-versatile' } = req.body;
+
+    const response = await client.complete({
+      model,
+      messages,
     });
 
     res.json({
@@ -424,6 +445,36 @@ app.post('/api/agent/run-with-mcp', async (req, res) => {
       success: true,
       output: result.output,
       iterations: result.iterations,
+      toolCalls: result.toolCalls.map(t => ({
+        name: t.name,
+        args: t.args,
+        result: typeof t.result === 'string' ? t.result.slice(0, 500) : t.result,
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Vision Agent - Run with images + tools + MCP (uses library method)
+app.post('/api/agent/run-vision', async (req, res) => {
+  try {
+    const { messages, model = 'meta-llama/llama-4-scout-17b-16e-instruct' } = req.body;
+
+    // Use the library's chat.withVision method
+    const result = await client.chat.withVision({
+      messages,
+      visionModel: model,
+      agentModel: 'llama-3.3-70b-versatile',
+      useTools: true,
+      includeMCP: true,
+      maxIterations: 5,
+    });
+
+    res.json({
+      success: true,
+      output: result.content,
+      imageAnalysis: result.imageAnalysis,
       toolCalls: result.toolCalls.map(t => ({
         name: t.name,
         args: t.args,
