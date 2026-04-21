@@ -86,7 +86,7 @@ export class GroqRAG {
 
     // Initialize web modules
     this.fetcher = createFetcher(config.web);
-    this.searchProvider = createSearchProvider();
+    this.searchProvider = createSearchProvider(config.search);
 
     // Initialize modules
     this.chat = new ChatWithRAG(this);

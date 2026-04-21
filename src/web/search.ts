@@ -1,3 +1,4 @@
+import { tavily } from '@tavily/core';
 import { SearchOptions, WebSearchResult } from '../types';
 
 /**
@@ -268,10 +269,41 @@ export class SerperSearch implements SearchProvider {
 }
 
 /**
+ * Tavily Search API
+ */
+export class TavilySearch implements SearchProvider {
+  private apiKey: string;
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
+
+  async search(query: string, options: SearchOptions = {}): Promise<WebSearchResult[]> {
+    const { maxResults = 10 } = options;
+
+    const client = tavily({ apiKey: this.apiKey });
+
+    const response = await client.search(query, {
+      maxResults,
+      searchDepth: 'basic',
+    });
+
+    const results = (response.results || []).map((result: { title: string; url: string; content: string }, index: number) => ({
+      title: result.title,
+      url: result.url,
+      snippet: result.content,
+      position: index + 1,
+    }));
+
+    return applyContentLimits(results, options);
+  }
+}
+
+/**
  * Create a search provider based on available API keys
  */
 export function createSearchProvider(config?: {
-  provider?: 'duckduckgo' | 'brave' | 'serper';
+  provider?: 'duckduckgo' | 'brave' | 'serper' | 'tavily';
   apiKey?: string;
 }): SearchProvider {
   const { provider = 'duckduckgo', apiKey } = config || {};
@@ -283,6 +315,11 @@ export function createSearchProvider(config?: {
     case 'serper':
       if (!apiKey) throw new Error('Serper Search requires an API key');
       return new SerperSearch(apiKey);
+    case 'tavily': {
+      const key = apiKey || process.env.TAVILY_API_KEY;
+      if (!key) throw new Error('Tavily Search requires an API key (set apiKey or TAVILY_API_KEY env var)');
+      return new TavilySearch(key);
+    }
     case 'duckduckgo':
     default:
       return new DuckDuckGoSearch();

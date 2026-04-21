@@ -3,6 +3,7 @@ export {
   DuckDuckGoSearch,
   BraveSearch,
   SerperSearch,
+  TavilySearch,
   createSearchProvider,
   type SearchProvider,
 } from './search';

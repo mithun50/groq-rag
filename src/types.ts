@@ -20,6 +20,12 @@ export interface GroqRAGConfig {
 
   // Web configuration
   web?: WebConfig;
+
+  // Search provider configuration
+  search?: {
+    provider?: 'duckduckgo' | 'brave' | 'serper' | 'tavily';
+    apiKey?: string;
+  };
 }
 
 export interface EmbeddingConfig {
