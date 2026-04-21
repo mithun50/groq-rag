@@ -58,6 +58,7 @@
   },
   "homepage": "https://github.com/mithun50/groq-rag#readme",
   "dependencies": {
+    "@tavily/core": "^0.7.2",
     "cheerio": "^1.0.0",
     "groq-sdk": "^0.8.0",
     "node-fetch": "^3.3.2",
