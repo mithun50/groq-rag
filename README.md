@@ -783,6 +783,9 @@ await mcpClient.disconnect();
 
 > See [MCP Servers](https://github.com/modelcontextprotocol/servers) for more available servers.
 
+For a standalone web research workflow without API keys, see the
+[Parallel Search MCP recipe](docs/cookbook.md#keyless-web-research-with-parallel).
+
 ## Configuration
 
 ### Vector Stores
