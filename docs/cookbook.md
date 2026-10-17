@@ -453,7 +453,8 @@ npm install groq-rag mcp-remote@0.15.1 tsx
 
 Save the following as `parallel-search.mts`. The `mcp-remote` bridge connects
 groq-rag's stdio MCP client to Parallel's remote HTTP endpoint. `--no-install`
-uses the bridge installed above.
+uses the bridge installed above; `--enable-proxy` honors any configured
+`HTTP_PROXY`, `HTTPS_PROXY`, and `NO_PROXY` settings.
 
 ```typescript
 import { randomUUID } from 'node:crypto';
@@ -467,6 +468,7 @@ const mcp = createMCPClient({
     '--no-install',
     'mcp-remote',
     'https://search.parallel.ai/mcp',
+    '--enable-proxy',
     '--transport', 'http-only',
     '--header', 'User-Agent:groq-rag/0.2.2',
   ],
