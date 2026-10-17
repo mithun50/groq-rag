@@ -435,6 +435,99 @@ await mcp.disconnect();
 
 ---
 
+### Keyless Web Research with Parallel
+
+Use [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp)
+to search the web and read pages without a Parallel account or API key. Anonymous
+searches use Fast mode and have usage limits. This standalone recipe does not call
+Groq, so it does not need `GROQ_API_KEY` either.
+
+With Node.js 22+ and npm, create a separate example project:
+
+```bash
+mkdir parallel-research
+cd parallel-research
+npm init -y
+npm install groq-rag mcp-remote@0.15.1 tsx
+```
+
+Save the following as `parallel-search.mts`. The `mcp-remote` bridge connects
+groq-rag's stdio MCP client to Parallel's remote HTTP endpoint. `--no-install`
+uses the bridge installed above.
+
+```typescript
+import { randomUUID } from 'node:crypto';
+import { createMCPClient, type MCPToolCallResult } from 'groq-rag';
+
+const mcp = createMCPClient({
+  name: 'parallel',
+  transport: 'stdio',
+  command: 'npx',
+  args: [
+    '--no-install',
+    'mcp-remote',
+    'https://search.parallel.ai/mcp',
+    '--transport', 'http-only',
+    '--header', 'User-Agent:groq-rag/0.2.2',
+  ],
+  timeout: 60000,
+});
+
+// Reuse one identifier for related search and fetch calls.
+const sessionId = randomUUID();
+
+function printResult(result: MCPToolCallResult): void {
+  const text = result.content
+    .filter(item => item.type === 'text')
+    .map(item => item.text ?? '')
+    .join('\n');
+  if (result.isError) {
+    throw new Error(text || 'Parallel tool call failed');
+  }
+  console.log(text);
+}
+
+try {
+  await mcp.connect();
+  console.log('Available tools:', mcp.getTools().map(tool => tool.name));
+
+  const queries = ['Groq TypeScript SDK quickstart'];
+  const search = await mcp.callTool('web_search', {
+    objective: 'Find how to initialize the Groq TypeScript SDK and make a chat completion.',
+    search_queries: queries,
+    session_id: sessionId,
+  });
+  printResult(search);
+
+  // Read a known source. Replace this URL with a relevant search result
+  // when researching another topic.
+  const page = await mcp.callTool('web_fetch', {
+    urls: ['https://console.groq.com/docs/quickstart'],
+    objective: 'Find the TypeScript setup and chat completion example.',
+    search_queries: queries,
+    session_id: sessionId,
+  });
+  printResult(page);
+} finally {
+  await mcp.disconnect();
+}
+```
+
+Run it from the example project:
+
+```bash
+npx tsx parallel-search.mts
+```
+
+The script lists the discovered tools, prints search excerpts with source URLs,
+then prints the fetched page excerpts. Tool errors stop the script, and `finally`
+disconnects the bridge on success or failure. If the service reports a usage limit,
+follow its retry guidance rather than changing the session identifier.
+
+This setup is opt-in and leaves the built-in web-search provider unchanged.
+
+---
+
 ### Dynamic Tool Discovery
 
 Discover and use tools dynamically:
